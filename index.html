@@ -421,7 +421,7 @@ function cl(x){return JSON.parse(JSON.stringify(x))}
 function esc(x){return String(x).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function periodRule(key,wd){var r=null;(S.periods||[]).forEach(function(p){
   var q=p.wd&&p.wd[wd];
-  if(key>=p.from&&key<=p.to&&q&&q.mode&&q.mode!=='asis'){r={mode:q.mode,times:q.times||[],alt:!!q.alt,name:p.name||''}}});return r}
+  if(key>=p.from&&key<=p.to&&q&&q.mode&&q.mode!=='asis'){r={mode:q.mode,times:q.times||[],alt:q.alt!==false,name:p.name||''}}});return r}
 function monthDays(y,m){
   var sug=suggestions(y),mo=S.months[y+'-'+pad(m)]||{days:{}},ov=mo.days||{};
   var priests=(typeof mo.priests==='boolean')?mo.priests:S.priests;
@@ -431,7 +431,7 @@ function monthDays(y,m){
   for(d=1;d<=nd;d++){
     var wd=new Date(Date.UTC(y,m-1,d)).getUTCDay(),key=y+'-'+pad(m)+'-'+pad(d),c=coptic(y,m,d);
     var times=cl(S.defaults[wd]||[]),label='',type='normal',noMass=false,listed=times.length>0;
-    var alt=!!(S.alt&&S.alt[wd]),perName='',auto=false;
+    var alt=(S.alt&&S.alt[wd]!==undefined)?!!S.alt[wd]:true,perName='',auto=false;
     var pr=periodRule(key,wd);
     if(pr){perName=pr.name||'فترة';
       if(pr.mode==='none'){times=[];listed=false;alt=false}
@@ -483,7 +483,7 @@ function timeCell(dy,fs,sp,fg,D,dark){
     var st='display:inline-block;white-space:nowrap;font-weight:700;';
     if(sp||D.pill)st+='padding:1px '+Math.round(fs*.6)+'px;border-radius:99px;background:'+(sp?(dark?'rgba(255,255,255,.2)':'rgba(255,255,255,.6)'):D.pill[0])+';color:'+(sp?fg:D.pill[1])+';';
     return '<span style="'+st+'">'+fmtTime(t)+'</span>'});
-  var sep='<span style="font-size:.8em;opacity:.75">أو</span>';
+  var sep='<span style="font-size:.8em;opacity:.75">و</span>';
   return '<div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:'+Math.round(fs*.2)+'px '+Math.round(fs*.45)+'px">'+items.join(dy.alt?sep:'')+'</div>'}
 function rinfo(dy,D,i,mode){var A=mode==='one'?[0.9,0.94]:[0.86,0.9];
   var ty=TY[dy.type]||TY.normal,sp=dy.type!=='normal';
@@ -678,7 +678,7 @@ function renderDays(){
     var item=document.createElement('div');item.className='dayitem';
     var ty=TY[dy.type]||TY.normal;
     var head=document.createElement('button');head.type='button';head.className='dayhead';head.setAttribute('aria-expanded',expanded===dy.key);
-    head.innerHTML='<span class="dnum">'+n(dy.d)+'</span><span class="dmain"><b>'+DAYS[dy.wd]+(dy.type!=='normal'?'<span class="tag">'+ty.name+'</span>':'')+'</b><span>'+copText(dy.cop)+(dy.label?' · '+dy.label:'')+(dy.per?' · فترة: '+esc(dy.per):'')+'</span></span><span class="dtime">'+(dy.noMass?'لا يوجد قداس':dy.times.map(fmtTime).join(dy.alt?'<br>أو<br>':'<br>'))+'</span>';
+    head.innerHTML='<span class="dnum">'+n(dy.d)+'</span><span class="dmain"><b>'+DAYS[dy.wd]+(dy.type!=='normal'?'<span class="tag">'+ty.name+'</span>':'')+'</b><span>'+copText(dy.cop)+(dy.label?' · '+dy.label:'')+(dy.per?' · فترة: '+esc(dy.per):'')+'</span></span><span class="dtime">'+(dy.noMass?'لا يوجد قداس':dy.times.map(fmtTime).join(dy.alt?'<br>و<br>':'<br>'))+'</span>';
     head.onclick=function(){expanded=(expanded===dy.key)?null:dy.key;renderDays()};
     item.appendChild(head);
     if(expanded===dy.key)item.appendChild(dayEditor(dy));
@@ -826,9 +826,9 @@ logoUp('#upDiocese','diocese');logoUp('#upChurch','church');
 /* ---------- alternative-hours switch ---------- */
 function altRow(obj,key,onChange){
   var r=document.createElement('div');r.className='switch';
-  r.innerHTML='<span style="font-size:13px">المواعيد المتعددة بدائل (تُكتب «أو» بينها) وليست قداسات إضافية</span><button type="button" aria-label="المواعيد المتعددة بدائل"></button>';
-  var b=r.querySelector('button');b.setAttribute('aria-pressed',!!obj[key]);
-  b.onclick=function(){obj[key]=!obj[key];b.setAttribute('aria-pressed',!!obj[key]);onChange()};
+  r.innerHTML='<span style="font-size:13px">كتابة «و» بين المواعيد المتعددة في نفس اليوم</span><button type="button" aria-label="كتابة و بين المواعيد"></button>';
+  var cur=function(){return obj[key]===undefined?true:!!obj[key]};var b=r.querySelector('button');b.setAttribute('aria-pressed',cur());
+  b.onclick=function(){obj[key]=!cur();b.setAttribute('aria-pressed',cur());onChange()};
   return r}
 
 /* ---------- month / year picker ---------- */
@@ -888,8 +888,8 @@ function eachDay(from,to,fn){var a=isoParts(from),b=isoParts(to),t=Date.UTC(a.y,
 
 /* ---------- periods ---------- */
 var PF=null;
-function newPF(){var wd={};for(var i=0;i<7;i++)wd[i]={mode:'asis',times:[],alt:false};return {id:null,name:'',from:'',to:'',wd:wd}}
-function ruleText(q){return q.mode==='none'?'بدون قداس معتاد':(q.times&&q.times.length?q.times.map(fmtTime).join(q.alt?' أو ':'، '):'بدون مواعيد')}
+function newPF(){var wd={};for(var i=0;i<7;i++)wd[i]={mode:'asis',times:[],alt:true};return {id:null,name:'',from:'',to:'',wd:wd}}
+function ruleText(q){return q.mode==='none'?'بدون قداس معتاد':(q.times&&q.times.length?q.times.map(fmtTime).join(q.alt?' و ':'، '):'بدون مواعيد')}
 function renderPeriods(){
   var box=$('#perList');if(!box)return;box.innerHTML='';
   if(!S.periods.length){box.innerHTML='<p class="hint">لا توجد فترات محفوظة بعد.</p>'}
@@ -926,7 +926,7 @@ function perAffected(p){
   eachDay(p.from,p.to,function(key,w){
     var q=p.wd[w];if(!q||q.mode==='asis')return;
     var before=S.defaults[w]||[],after=q.mode==='none'?[]:(q.times||[]);
-    var same=JSON.stringify(before)===JSON.stringify(after)&&!!(S.alt&&S.alt[w])===!!q.alt;
+    var same=JSON.stringify(before)===JSON.stringify(after)&&((S.alt&&S.alt[w]!==undefined)?!!S.alt[w]:true)===!!q.alt;
     if(same)return;
     var pm=S.months[key.slice(0,7)],hasOv=!!(pm&&pm.days&&pm.days[key]);
     out.push({key:key,w:w,before:before,after:after,alt:q.alt,hasOv:hasOv})});
@@ -937,7 +937,7 @@ function showPerCheck(){
   if(!L.length){box.innerHTML='<p class="hint">لا توجد أيام ستتغير مواعيدها في هذه الفترة.</p>';return true}
   var h='<p class="hint"><b>'+n(L.length)+'</b> يوم ستتغير مواعيده:</p><div class="aff">';
   L.slice(0,60).forEach(function(x){
-    h+='<div>'+shortDate(x.key)+'<br><span class="hint">'+(x.before.length?x.before.map(fmtTime).join('، '):'بدون قداس')+' ← '+(x.after.length?x.after.map(fmtTime).join(x.alt?' أو ':'، '):'بدون قداس معتاد')+'</span>'+(x.hasOv?'<small>له تعديل خاص يغلب الفترة</small>':'')+'</div>'});
+    h+='<div>'+shortDate(x.key)+'<br><span class="hint">'+(x.before.length?x.before.map(fmtTime).join('، '):'بدون قداس')+' ← '+(x.after.length?x.after.map(fmtTime).join(x.alt?' و ':'، '):'بدون قداس معتاد')+'</span>'+(x.hasOv?'<small>له تعديل خاص يغلب الفترة</small>':'')+'</div>'});
   if(L.length>60)h+='<div class="hint">و '+n(L.length-60)+' يومًا آخر</div>';
   box.innerHTML=h+'</div>';return true}
 function perValidate(){
@@ -1102,7 +1102,7 @@ function docxBlob(){
     var dayP=wpara(DAYS[dy.wd],{b:1,color:fg,sz:sz,sp:0})+(dy.label?wpara(dy.label,{color:fg,sz:szl,sp:0}):'');
     var timeP='';
     if(dy.noMass)timeP=wpara('لا يوجد قداس',{b:1,color:fg,sz:sz,sp:0});
-    else if(dy.alt)timeP=wpara(dy.times.map(fmtTime).join(' أو '),{color:fg,b:1,sz:sz,sp:0});
+    else if(dy.alt)timeP=wpara(dy.times.map(fmtTime).join(' و '),{color:fg,b:1,sz:sz,sp:0});
     else dy.times.forEach(function(t){timeP+=wpara(fmtTime(t),{color:fg,b:1,sz:sz,sp:0})});
     rows+='<w:tr><w:trPr><w:cantSplit/></w:trPr>'+wcell(W[0],fill,dayP)+wcell(W[1],fill,wpara(n(dy.m)+'/'+n(dy.d),{color:fg,sz:sz,sp:0}))+wcell(W[2],fill,wpara(copText(dy.cop),{color:fg,sz:sz,sp:0}))+wcell(W[3],fill,timeP)+'</w:tr>'});
   var body=wtitle('مواعيد قداسات شهر ',GMON[VM-1],D.title,D.mon,56,20)+

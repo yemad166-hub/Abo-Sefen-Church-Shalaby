@@ -651,6 +651,7 @@ function renderSug(){
     all.onclick=function(){L.forEach(function(x){applySug(x.key,x.s)});persist();renderAll();toast('تم اعتماد '+L.length+' مقترحات')};h.appendChild(all)}
   box.appendChild(h)}
 
+function confirmLordMem(){return window.confirm('تنبيه: في شهري طوبة وأمشير لا يوجد تذكار الأعياد السيدية. هل أنت متأكد من أنك تريد إضافته؟')}
 function memOn(x){var mo=mget(false);return (mo.mem&&typeof mo.mem[x.id]==='boolean')?mo.mem[x.id]:!!S.memDefault[x.id]}
 function renderMem(){
   var box=$('#memBox');box.innerHTML='';
@@ -660,7 +661,7 @@ function renderMem(){
     var on=memOn(x),b=document.createElement('button');b.type='button';b.className='memrow'+(dates.length?'':' none');b.setAttribute('aria-pressed',on);
     var where=dates.length?dates.map(function(z){return DAYS[z.wd]+' '+n(z.d)+'/'+n(VM)+' ('+n(z.c.d)+' '+CMON[z.c.m-1]+')'}).join(' و '):'لا يقع هذا التذكار في هذا الشهر';
     b.innerHTML='<span><b>'+(on?'تمت إضافة ':'إضافة ')+x.short+' — '+n(x.d)+' قبطي</b><small>'+where+'</small></span><span class="st">'+(on?'إلغاء':'إضافة')+'</span>';
-    b.onclick=function(){var mo=mget(true);if(!mo.mem)mo.mem={};mo.mem[x.id]=!on;persist();renderAll();toast((on?'تم إلغاء ':'تمت إضافة ')+x.short)};
+    b.onclick=function(){if(!on&&x.id==='lord'&&!confirmLordMem())return;var mo=mget(true);if(!mo.mem)mo.mem={};mo.mem[x.id]=!on;persist();renderAll();toast((on?'تم إلغاء ':'تمت إضافة ')+x.short)};
     box.appendChild(b)})}
 
 function renderCalc(){
@@ -787,7 +788,7 @@ $('#easterSet').onclick=function(){var v=$('#easterDate').value;if(!v){toast('ا
   if(+v.slice(0,4)!==CY){toast('التاريخ لازم يكون في سنة '+n(CY));return}
   S.easterOv[CY]=v;persist();renderAll();toast('تم تعديل تاريخ القيامة')};
 $('#easterAuto').onclick=function(){delete S.easterOv[CY];persist();renderAll();toast('رجع الحساب التلقائي')};
-['angel','virgin','lord'].forEach(function(id){$('#md'+id).onclick=function(){S.memDefault[id]=!S.memDefault[id];persist();renderAll()}});
+['angel','virgin','lord'].forEach(function(id){$('#md'+id).onclick=function(){if(id==='lord'&&!S.memDefault[id]&&!confirmLordMem())return;S.memDefault[id]=!S.memDefault[id];persist();renderAll()}});
 $('#next').onclick=function(){moveMonth(1)};$('#prev').onclick=function(){moveMonth(-1)};
 $('#priestsMonth').onclick=function(){var mo=mget(true),cur=(typeof mo.priests==='boolean')?mo.priests:S.priests;mo.priests=!cur;persist();renderAll()};
 $('#priestsGlobal').onclick=function(){S.priests=!S.priests;persist();renderAll()};

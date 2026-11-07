@@ -487,7 +487,7 @@ function timeCell(dy,fs,sp,fg,D,dark){
   return '<div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:'+Math.round(fs*.2)+'px '+Math.round(fs*.45)+'px">'+items.join(dy.alt?sep:'')+'</div>'}
 function rinfo(dy,D,i){
   var ty=TY[dy.type]||TY.normal,sp=dy.type!=='normal';
-  return {ty:ty,sp:sp,dark:sp&&isDark(ty.bg),bg:rgba(sp?ty.bg:(i%2?D.rowB:D.rowA),sp?0.92:0.88),fg:sp?ty.fg:D.text,sub:sp?ty.fg:D.sub,bar:sp?ty.ac:'transparent'}}
+  return {ty:ty,sp:sp,dark:sp&&isDark(ty.bg),bg:rgba(sp?ty.bg:(i%2?D.rowB:D.rowA),sp?0.90:0.86),fg:sp?ty.fg:D.text,sub:sp?ty.fg:D.sub,bar:sp?ty.ac:'transparent'}}
 function cellBox(inner,fs){return '<div style="padding:'+Math.round(fs*.4)+'px 5px;text-align:center">'+inner+'</div>'}
 function dayCell(dy,r,fs){
   return cellBox('<div style="display:flex;align-items:center;justify-content:center;gap:4px;font-weight:700">'+(r.sp&&r.ty.icon?icon(r.ty.icon,Math.round(fs*.95),r.ty.ac):'')+'<span>'+DAYS[dy.wd]+'</span></div>'+
@@ -499,7 +499,7 @@ var COLS={one:'1.6fr .75fr 1.05fr 1.6fr',two:'1.45fr .95fr 1.3fr'};
 function pageBlock(list,mode,k,D){
   var fs=(mode==='one'?14:13.5)*k,cols=COLS[mode];
   var labels=mode==='one'?['اليوم','التاريخ','القبطي','الميعاد']:['اليوم','التاريخ','الميعاد'];
-  var head=(S.design==='cards')?'':'<div style="display:grid;grid-template-columns:'+cols+';background:'+rgba(D.headBg,.92)+';color:'+D.headFg+';'+F+'font-weight:700;font-size:'+(fs*.95).toFixed(1)+'px;text-align:center;border-right:3px solid transparent">'+
+  var head=(S.design==='cards')?'':'<div style="display:grid;grid-template-columns:'+cols+';background:'+rgba(D.headBg,.90)+';color:'+D.headFg+';'+F+'font-weight:700;font-size:'+(fs*.95).toFixed(1)+'px;text-align:center;border-right:3px solid transparent">'+
     labels.map(function(l){return '<div style="padding:'+Math.round(fs*.4)+'px 4px">'+l+'</div>'}).join('')+'</div>';
   var rows=list.map(function(dy,i){
     var r=rinfo(dy,D,i),dt='<bdi dir="ltr">'+n(dy.m)+'/'+n(dy.d)+'</bdi>',inner;
@@ -531,7 +531,7 @@ var MH=null;
 function measureHost(){if(!MH){MH=document.createElement('div');MH.setAttribute('aria-hidden','true');MH.style.cssText='position:absolute;left:-10000px;top:0;width:'+PW+'px;visibility:hidden;pointer-events:none';document.body.appendChild(MH)}return MH}
 function fitPage(fmt){
   var days=monthDays(VY,VM),P=PG[fmt],top=Math.round(P.H*0.128),host=measureHost();
-  var mode=(S.layout==='two')?'two':'one',base=mode==='one'?14:13.5,limits=mode==='one'?[0.80,0.87]:[0.625,0.78],res=null;
+  var mode=(S.layout==='two')?'two':'one',base=mode==='one'?14:13.5,limits=mode==='one'?[0.84,0.90]:[0.66,0.80],res=null;
   var kmax=mode==='one'?1.25:1.35;
   function tryMode(avail){
     for(var k=kmax;k>=0.5;k-=0.03){host.innerHTML=pageHTML(fmt,mode,k,days);

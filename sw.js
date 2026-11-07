@@ -1,6 +1,6 @@
 /* Service worker: يخلّي الموقع يشتغل بدون إنترنت.
    غيّر رقم VERSION عند كل تحديث للموقع عشان الأجهزة تاخد النسخة الجديدة. */
-var VERSION = 'v3';
+var VERSION = 'v4';
 var CACHE = 'mass-schedule-' + VERSION;
 
 /* ملفات الموقع نفسه (لازم تتخزن كلها وقت التثبيت) */

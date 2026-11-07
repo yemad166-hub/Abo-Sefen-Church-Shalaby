@@ -508,17 +508,17 @@ function pageBlock(list,mode,k,D){
     return rowWrap(r,D,cols,fs,inner)}).join('');
   if(D.gap)return '<div style="display:flex;flex-direction:column;gap:'+Math.round(3*k)+'px">'+rows+'</div>';
   return '<div style="border:1px solid '+D.line+';border-radius:8px;overflow:hidden">'+head+rows+'</div>'}
-function pageHTML(fmt,mode,k,days){
-  var P=PG[fmt],H=P.H,D=DES[S.design]||DES.classic,top=Math.round(H*0.121),body;
+function pageHTML(fmt,mode,k,days,split){
+  var P=PG[fmt],H=P.H,D=DES[S.design]||DES.classic,top=Math.round(H*0.118),body;
   if(!days.length)body='<div style="padding:30px;text-align:center;'+F+'color:'+D.sub+';background:'+rgba(D.paper,.9)+';border-radius:8px">لا توجد قداسات في هذا الشهر</div>';
   else if(mode==='one')body=pageBlock(days,'one',k,D);
-  else{var h=Math.ceil(days.length/2);
+  else{var h=(split>=0&&split<=days.length)?split:Math.ceil(days.length/2);
     body='<div style="display:flex;gap:12px;align-items:flex-start"><div style="flex:1;min-width:0">'+pageBlock(days.slice(0,h),'two',k,D)+'</div><div style="flex:1;min-width:0">'+pageBlock(days.slice(h),'two',k,D)+'</div></div>'}
   var LW=116,LH=74;
   var lg=function(w){return '<div style="width:'+LW+'px;height:'+LH+'px;flex:none;display:flex;align-items:center;justify-content:center"><img src="'+logoSrc(w)+'" style="max-width:100%;max-height:100%;display:block;object-fit:contain" alt=""></div>'};
   var mn=GMON[VM-1],tsz=mn.length>=6?38:(mn.length===5?40:42);
   var rule='<div style="flex:1;height:1px;background:'+D.mon+';opacity:.55"></div>';
-  var head='<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">'+lg('diocese')+
+  var head='<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">'+lg('diocese')+
     '<div style="flex:1;text-align:center;min-width:0">'+
       '<div class="ttl" style="font-family:Amiri,serif;font-size:'+tsz+'px;font-weight:700;color:'+D.title+';line-height:1.18;white-space:nowrap">مواعيد قداسات شهر <span style="color:'+D.mon+'">'+mn+'</span></div>'+
       '<div style="display:flex;align-items:center;gap:10px;margin:2px auto 0;width:62%">'+rule+'<span style="'+F+'font-size:17px;font-weight:700;color:'+D.sub+';line-height:1.2">'+n(VY)+'</span>'+rule+'</div>'+
@@ -530,16 +530,33 @@ function pageHTML(fmt,mode,k,days){
 var MH=null;
 function measureHost(){if(!MH){MH=document.createElement('div');MH.setAttribute('aria-hidden','true');MH.style.cssText='position:absolute;left:-10000px;top:0;width:'+PW+'px;visibility:hidden;pointer-events:none';document.body.appendChild(MH)}return MH}
 function fitPage(fmt){
-  var days=monthDays(VY,VM),P=PG[fmt],top=Math.round(P.H*0.121),host=measureHost();
-  var mode=(S.layout==='two')?'two':'one',base=mode==='one'?14:13.5,limits=mode==='one'?[0.875,0.90]:[0.70,0.82],res=null;
-  var kmax=mode==='one'?1.25:1.35;
-  function tryMode(avail){
-    for(var k=kmax;k>=0.5;k-=0.03){host.innerHTML=pageHTML(fmt,mode,k,days);
-      var h=host.querySelector('.pgc').offsetHeight;if(h<=avail)return {mode:mode,k:k,fs:base*k,ok:true,days:days}}
-    return {mode:mode,k:0.5,fs:base*0.5,ok:false,days:days}}
-  for(var i=0;i<limits.length&&!res;i++){var r=tryMode(Math.floor(P.H*limits[i])-top);if(r.ok||i===limits.length-1)res=r}
+  var days=monthDays(VY,VM),P=PG[fmt],top=Math.round(P.H*0.118),host=measureHost(),n=days.length;
+  var mode=(S.layout==='two')?'two':'one',base=mode==='one'?14:13.5,res=null,kmax=mode==='one'?1.25:1.35,k,i;
+  if(mode==='one'){
+    var limits=[0.88,0.895];
+    for(i=0;i<limits.length&&!res;i++){var avail=Math.floor(P.H*limits[i])-top;
+      for(k=kmax;k>=0.5;k-=0.03){host.innerHTML=pageHTML(fmt,'one',k,days);
+        if(host.querySelector('.pgc').offsetHeight<=avail){res={mode:'one',k:k,fs:base*k,ok:true,days:days};break}}}
+    if(!res)res={mode:'one',k:0.5,fs:base*0.5,ok:false,days:days};
+    host.innerHTML='';return res}
+  /* two columns: the right column (days 1..s) must stay above the chalice; the left column goes lower */
+  var LR=0.625,LL=0.88,limR=P.H*LR,limL=P.H*LL,gap=(S.design==='cards');
+  for(k=kmax;k>=0.5&&!res;k-=0.03){
+    host.innerHTML=pageHTML(fmt,'two',k,days,n);
+    var pgc=host.querySelector('.pgc'),blk=pgc.children[0]&&pgc.querySelector('div[style*="flex:1;min-width:0"] > div');
+    if(!blk||!n)break;
+    var kids=Array.prototype.slice.call(blk.children),rows=gap?kids:kids.slice(1);
+    if(rows.length!==n)break;
+    var pr=pgc.getBoundingClientRect(),br=blk.getBoundingClientRect(),yb=top+(br.top-pr.top),footH=Math.max(0,pr.bottom-br.bottom);
+    var rt=[],rb=[];rows.forEach(function(r){var q=r.getBoundingClientRect();rt.push(q.top-br.top);rb.push(q.bottom-br.top)});
+    var headH=rt[0],sR=0,sL=n+1,s;
+    for(s=1;s<=n;s++){if(yb+rb[s-1]+1<=limR)sR=s}
+    for(s=n;s>=1;s--){var lh=(s>=n)?0:headH+(rb[n-1]-rt[s])+1;if(yb+lh+footH<=limL)sL=s;else break}
+    var pref=Math.min(sR,Math.ceil(n/2));
+    if(pref>=1&&pref>=sL&&sL<=n)res={mode:'two',k:k,fs:base*k,ok:true,days:days,split:pref}}
+  if(!res)res={mode:'two',k:0.5,fs:base*0.5,ok:false,days:days,split:Math.ceil(n/2)};
   host.innerHTML='';return res}
-function pagePayload(fmt){var p=fitPage(fmt);return {html:pageHTML(fmt,p.mode,p.k,p.days),pick:p}}
+function pagePayload(fmt){var p=fitPage(fmt);return {html:pageHTML(fmt,p.mode,p.k,p.days,p.split),pick:p}}
 function fitTitles(root){Array.prototype.forEach.call(root.querySelectorAll('.ttl'),function(t){
   var box=t.parentElement,fs=44;t.style.fontSize=fs+'px';
   while(fs>24&&t.scrollWidth>box.clientWidth){fs--;t.style.fontSize=fs+'px'}})}

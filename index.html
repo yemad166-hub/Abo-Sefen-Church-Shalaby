@@ -123,6 +123,19 @@ button.lbl{border:0;background:transparent;font:inherit;color:inherit;cursor:poi
 .aff div{padding:6px 0;border-top:1px solid var(--line)}
 .aff small{display:block;color:var(--warn);font-size:12px}
 
+/* bottom navigation: fixed, thumb-friendly, and safe-area aware */
+body{padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}
+.bottom-nav{position:fixed;z-index:30;left:50%;right:auto;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(620px,calc(100% - 24px));padding:6px;min-height:66px;box-shadow:0 5px 24px rgba(20,15,25,.16);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.bottom-nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:54px;padding:5px 2px;font-size:11.5px;line-height:1.2}
+.bottom-nav svg,.export-action svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.bottom-nav button[aria-selected="true"] svg{stroke:currentColor}
+.exgrid{display:flex;flex-direction:column;gap:9px}
+.export-action{display:flex;gap:8px;align-items:stretch;width:100%}
+.export-action>.btn:first-child{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;min-width:0}
+.export-action .share-btn{width:48px;min-width:48px;padding:8px;display:flex;align-items:center;justify-content:center;color:var(--accent)}
+.export-action .share-btn svg{width:22px;height:22px}
+@media(min-width:700px){.bottom-nav{bottom:14px}}
+
 /* panels: class-driven so only the active one can ever be shown */
 .panel{display:none!important}
 .panel.on{display:block!important}
@@ -159,12 +172,12 @@ button.lbl{border:0;background:transparent;font:inherit;color:inherit;cursor:poi
       <div class="mgrid" id="pkGrid"></div>
       <div class="row"><button class="btn small" id="pkNow" type="button">الشهر الحالي</button><button class="btn small" id="pkClose" type="button">إغلاق</button></div>
     </div>
-    <div class="tabs" role="tablist">
-      <button role="tab" data-tab="preview" aria-selected="true">الجدول</button>
-      <button role="tab" data-tab="days" aria-selected="false">الأيام</button>
-      <button role="tab" data-tab="periods" aria-selected="false">الفترات</button>
-      <button role="tab" data-tab="settings" aria-selected="false">الإعدادات</button>
-    </div>
+    <nav class="tabs bottom-nav" role="tablist" aria-label="التنقل الرئيسي">
+      <button role="tab" data-tab="preview" aria-selected="true" aria-label="الجدول"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h3M8 17h7"/></svg><span>الجدول</span></button>
+      <button role="tab" data-tab="days" aria-selected="false" aria-label="الأيام"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8l-5-5H8Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg><span>الأيام</span></button>
+      <button role="tab" data-tab="periods" aria-selected="false" aria-label="الفترات"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M7 14h4M7 17h8"/><path d="M16 14h2v3h-2z"/></svg><span>الفترات</span></button>
+      <button role="tab" data-tab="settings" aria-selected="false" aria-label="الإعدادات"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.7a8 8 0 0 1-1.6.9l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.6-.9l-1.7.7-1.4-2.4 1.4-1.1a7 7 0 0 1 0-1.9l-1.4-1.1 1.4-2.4 1.7.7a8 8 0 0 1 1.6-.9l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.6.9l1.7-.7 1.4 2.4-1.4 1.1a7 7 0 0 1 0 1.8Z"/></svg><span>الإعدادات</span></button>
+    </nav>
   </div>
 
   <section id="p-preview" class="card panel on">
@@ -174,9 +187,9 @@ button.lbl{border:0;background:transparent;font:inherit;color:inherit;cursor:poi
     <div class="seg" style="grid-template-columns:repeat(2,1fr)" id="fmtSeg"><button type="button" data-f="img" aria-pressed="true">معاينة الصورة ٥×٧</button><button type="button" data-f="a4" aria-pressed="false">معاينة صفحة A4</button></div>
     <div class="stage"><div class="stagebox" id="stagebox"><div id="sheetHost"></div></div></div>
     <div class="exgrid">
-      <button class="btn primary" id="exWa" type="button">تحميل صورة ٥×٧ (واتساب)</button>
-      <button class="btn" id="exPdf" type="button">تحميل PDF (A4)</button>
-      <button class="btn" id="exDoc" type="button" style="grid-column:1/-1">تحميل Word (A4 قابل للتعديل)</button>
+      <div class="export-action"><button class="btn primary" id="exWa" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zM8 8h8M8 12h8M8 16h5"/></svg> تحميل صورة ٥×٧</button><button class="btn share-btn" id="shareWa" type="button" aria-label="مشاركة صورة الجدول" title="مشاركة الصورة"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.7 10.7 6.6-4.4M8.7 13.3l6.6 4.4"/></svg></button></div>
+      <div class="export-action"><button class="btn" id="exPdf" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6zM14 2v6h6M9 13h8M9 17h6"/></svg> تحميل PDF (A4)</button><button class="btn share-btn" id="sharePdf" type="button" aria-label="مشاركة ملف PDF" title="مشاركة PDF"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.7 10.7 6.6-4.4M8.7 13.3l6.6 4.4"/></svg></button></div>
+      <div class="export-action"><button class="btn" id="exDoc" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6zM14 2v6h6M9 13h8M9 17h8"/></svg> تحميل Word (قابل للتعديل)</button><button class="btn share-btn" id="shareDoc" type="button" aria-label="مشاركة ملف Word" title="مشاركة Word"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.7 10.7 6.6-4.4M8.7 13.3l6.6 4.4"/></svg></button></div>
     </div>
     <p class="hint">الصورة بمقاس ٥×٧ بالطول (١٨٠٠ × ٢٥٢٠ بكسل). ملف الـPDF صفحة A4 حقيقية بجودة ٣٠٠ DPI، والجدول بصف واحد شبه شفاف (يظهر الكأس من خلفه)، وتقدر تختار عمودين من فوق. ملف الـWord جدول قابل للتعديل على نفس الخلفية. كل زر يبدأ التحميل مباشرة.</p>
     <div id="result" class="result" hidden></div>
@@ -1031,10 +1044,24 @@ function showResult(blob,name,kind){
 function deliver(blob,name,kind){showResult(blob,name,kind);dlBlob(blob,name);toast('تم التحميل')}
 
 /* image 5x7 (portrait) */
-$('#exWa').onclick=function(){exportJob($('#exWa'),'جاري تجهيز الصورة…',async function(){
-  var cv=await renderPageCanvas('img'),blob=await canvasBlob(cv,'image/jpeg',0.95);
-  if(!blob)throw new Error('empty');
-  deliver(blob,fname('jpg','5x7'),'image')})};
+async function makeImageFile(){var cv=await renderPageCanvas('img'),blob=await canvasBlob(cv,'image/jpeg',0.95);if(!blob)throw new Error('empty');return {blob:blob,name:fname('jpg','5x7'),kind:'image'}}
+async function makePdfFile(){var cv=await renderPageCanvas('a4'),blob=await canvasToPdf(cv);return {blob:blob,name:fname('pdf','A4'),kind:'file'}}
+async function makeWordFile(){return {blob:docxBlob(),name:fname('docx','A4'),kind:'file'}}
+async function shareFile(file){
+  var f=new File([file.blob],file.name,{type:file.blob.type||'application/octet-stream'});
+  if(navigator.share&&navigator.canShare&&navigator.canShare({files:[f]})){
+    await navigator.share({files:[f],title:'جدول القداسات',text:'جدول القداسات - '+GMON[VM-1]+' '+VY});
+    toast('تم فتح قائمة المشاركة');
+  }else{
+    deliver(file.blob,file.name,file.kind);
+    toast('المشاركة المباشرة غير مدعومة هنا؛ تم تجهيز الملف للتحميل');
+  }
+}
+function bindExport(downloadId,shareId,label,make){
+  $('#'+downloadId).onclick=function(){exportJob($('#'+downloadId),label,async function(){var f=await make();deliver(f.blob,f.name,f.kind)})};
+  $('#'+shareId).onclick=function(){exportJob($('#'+shareId),'جاري التجهيز…',async function(){var f=await make();await shareFile(f)})};
+}
+bindExport('exWa','shareWa','جاري تجهيز الصورة…',makeImageFile);
 
 /* PDF: real A4 page, 300 dpi */
 async function canvasToPdf(canvas){
@@ -1054,9 +1081,7 @@ async function canvasToPdf(canvas){
   push(x+'trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n'+xr+'\n%%EOF');
   return new Blob(parts,{type:'application/pdf'})}
 
-$('#exPdf').onclick=function(){exportJob($('#exPdf'),'جاري تجهيز الـPDF…',async function(){
-  var cv=await renderPageCanvas('a4'),blob=await canvasToPdf(cv);
-  deliver(blob,fname('pdf','A4'),'file')})};
+bindExport('exPdf','sharePdf','جاري تجهيز الـPDF…',makePdfFile);
 
 /* Word (.docx built in the page: a plain zip, no library) */
 var CRCT=null;
@@ -1124,7 +1149,7 @@ function docxBlob(){
     {name:'word/header1.xml',data:enc.encode(hdr)},
     {name:'word/_rels/header1.xml.rels',data:enc.encode(X+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/background.jpg"/></Relationships>')},
     {name:'word/media/background.jpg',data:b64u8(BG_B64)}])}
-$('#exDoc').onclick=function(){exportJob($('#exDoc'),'جاري تجهيز ملف Word…',async function(){deliver(docxBlob(),fname('docx','A4'),'file')})};
+bindExport('exDoc','shareDoc','جاري تجهيز ملف Word…',makeWordFile);
 
 document.querySelectorAll('#fmtSeg button').forEach(function(b){b.onclick=function(){PFMT=b.dataset.f;document.querySelectorAll('#fmtSeg button').forEach(function(x){x.setAttribute('aria-pressed',x===b)});renderSheet()}});
 document.querySelectorAll('#layoutSeg button').forEach(function(b){b.onclick=function(){S.layout=b.dataset.l;persist();renderChips();renderSheet()}});

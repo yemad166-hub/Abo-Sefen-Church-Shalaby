@@ -889,7 +889,7 @@ function eachDay(from,to,fn){var a=isoParts(from),b=isoParts(to),t=Date.UTC(a.y,
 /* ---------- periods ---------- */
 var PF=null;
 function newPF(){var wd={};for(var i=0;i<7;i++)wd[i]={mode:'asis',times:[],alt:false};return {id:null,name:'',from:'',to:'',wd:wd}}
-function ruleText(q){return q.mode==='none'?'بدون قداس معتاد':(q.times&&q.times.length?q.times.map(fmtTime).join(q.alt?' و ':'، '):'بدون مواعيد')}
+function ruleText(q){return q.mode==='none'?'بدون قداس معتاد':(q.times&&q.times.length?q.times.map(fmtTime).join(q.alt?' أو ':'، '):'بدون مواعيد')}
 function renderPeriods(){
   var box=$('#perList');if(!box)return;box.innerHTML='';
   if(!S.periods.length){box.innerHTML='<p class="hint">لا توجد فترات محفوظة بعد.</p>'}

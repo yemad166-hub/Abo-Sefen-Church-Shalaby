@@ -597,12 +597,11 @@ function pageHTML(fmt,mode,k,days,split){
   var mn=GMON[VM-1],tsz=mn.length>=6?38:(mn.length===5?40:42);
   var glow='text-shadow:0 0 10px rgba(255,246,222,.95),0 0 4px rgba(255,246,222,.9),0 1px 0 rgba(255,250,235,.9);';
   var yrule=function(dir){return '<div style="flex:1;height:2px;border-radius:2px;background:linear-gradient(to '+dir+','+D.mon+',rgba(255,255,255,0))"></div>'};
-  var ydia=function(s){return '<div style="width:'+s+'px;height:'+s+'px;background:'+D.mon+';transform:rotate(45deg);flex:none"></div>'};
   var head='<div style="display:flex;align-items:center;gap:0;margin:-4px 14px 8px">'+lg('diocese')+
     '<div style="flex:1;text-align:center;min-width:0">'+
       '<div style="font-family:Amiri,serif;font-size:22px;font-weight:700;color:'+D.title+';line-height:1.2;white-space:nowrap;'+glow+'">مواعيد قداسات شهر</div>'+
       '<div class="ttl" style="font-family:Amiri,serif;font-weight:700;color:'+D.mon+';line-height:1.2;white-space:nowrap;'+glow+'">'+mn+'</div>'+
-      '<div style="display:flex;align-items:center;gap:6px;margin:1px auto 0;width:78%">'+yrule('left')+ydia(6)+'<span style="'+F+'font-size:19px;font-weight:700;color:'+D.title+';line-height:1.2;letter-spacing:2px;'+glow+'">'+n(VY)+'</span>'+ydia(6)+yrule('right')+'</div>'+
+      '<div style="display:flex;align-items:center;gap:6px;margin:1px auto 0;width:78%">'+yrule('left')+'<span style="'+F+'font-size:19px;font-weight:700;color:'+D.title+';line-height:1.2;letter-spacing:2px;'+glow+'">'+n(VY)+'</span>'+yrule('right')+'</div>'+
     '</div>'+lg('church')+'</div>';
   var foot=S.footer?'<div style="'+F+'text-align:center;font-size:'+(11.5*Math.min(k,1)).toFixed(1)+'px;color:'+D.sub+';padding-top:6px">'+esc(S.footer)+'</div>':'';
   return '<div class="pgroot" style="position:relative;width:'+PW+'px;height:'+H+'px;overflow:hidden;direction:rtl;background:#FBEBC8">'+

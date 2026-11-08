@@ -1353,8 +1353,24 @@ window.addEventListener('appinstalled',function(){deferredInstall=null;$('#insta
 $('#installBtn').onclick=async function(){if(!deferredInstall)return;deferredInstall.prompt();try{await deferredInstall.userChoice}catch(e){}deferredInstall=null;$('#installBtn').hidden=true};
 if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){
   var hadCtl=!!navigator.serviceWorker.controller;
+  var updBar=function(w){
+    if(document.getElementById('updBar'))return;
+    var b=document.createElement('div');b.id='updBar';
+    b.style.cssText='position:fixed;left:12px;right:12px;bottom:84px;z-index:99999;background:#7d2a37;color:#fff;border-radius:14px;padding:11px 14px;display:flex;align-items:center;gap:10px;box-shadow:0 6px 22px rgba(0,0,0,.35);font:600 14px/1.4 Cairo,Tahoma,sans-serif;direction:rtl';
+    b.innerHTML='<span style="flex:1">يوجد تحديث جديد للتطبيق</span><button id="updGo" style="border:0;border-radius:10px;padding:8px 14px;background:#fff;color:#7d2a37;font:700 14px Cairo,Tahoma,sans-serif;cursor:pointer">تحديث الآن</button><button id="updX" style="border:0;background:none;color:#fff;font-size:20px;line-height:1;cursor:pointer" aria-label="إغلاق">×</button>';
+    document.body.appendChild(b);
+    document.getElementById('updX').onclick=function(){b.remove()};
+    document.getElementById('updGo').onclick=function(){
+      var done=false,go=function(){if(!done){done=true;location.reload()}};
+      navigator.serviceWorker.addEventListener('controllerchange',go);
+      try{w.postMessage({type:'SKIP_WAITING'})}catch(e){}
+      setTimeout(go,1500)}};
   navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(function(reg){
-    reg.addEventListener('updatefound',function(){var w=reg.installing;if(!w)return;w.addEventListener('statechange',function(){if(w.state==='installed'&&navigator.serviceWorker.controller)toast('تم تحديث التطبيق. أعد فتحه لتظهر النسخة الجديدة')})})}).catch(function(){});
+    if(reg.waiting&&navigator.serviceWorker.controller)updBar(reg.waiting);
+    reg.addEventListener('updatefound',function(){var w=reg.installing;if(!w)return;w.addEventListener('statechange',function(){if(w.state==='installed'&&navigator.serviceWorker.controller)updBar(w)})});
+    var chk=function(){if(navigator.onLine)try{reg.update()}catch(e){}};
+    chk();window.addEventListener('online',chk);
+    document.addEventListener('visibilitychange',function(){if(!document.hidden)chk()})}).catch(function(){});
   navigator.serviceWorker.ready.then(function(){$('#offStatus').textContent='جاهز للعمل بدون إنترنت ✓ (التعديلات محفوظة على جهازك).'}).catch(function(){})}
 else{$('#offStatus').textContent='العمل بدون إنترنت والتثبيت يتفعلان بعد رفع الملفات على موقع (مثل GitHub Pages) وفتحه مرة واحدة.'}
 renderAll();setTab('preview',true);

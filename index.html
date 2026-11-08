@@ -609,7 +609,7 @@ function pageHTML(fmt,mode,k,days,split){
     '<img src="'+BG+'" style="position:absolute;left:0;top:0;width:'+PW+'px;height:'+H+'px;display:block" alt="">'+
     '<div class="pgc" style="position:absolute;left:46px;right:46px;top:'+top+'px">'+head+body+foot+'</div></div>'}
 var MH=null;
-function measureHost(){if(!MH){MH=document.createElement('div');MH.setAttribute('aria-hidden','true');MH.style.cssText='position:absolute;left:-10000px;top:0;width:'+PW+'px;visibility:hidden;pointer-events:none';document.body.appendChild(MH)}return MH}
+function measureHost(){if(!MH){MH=document.createElement('div');MH.setAttribute('aria-hidden','true');MH.style.cssText='position:fixed;left:-10000px;top:0;width:'+PW+'px;visibility:hidden;pointer-events:none;contain:layout style';document.body.appendChild(MH)}return MH}
 function fitPage(fmt){
   var days=monthDays(VY,VM),P=PG[fmt],top=Math.round(P.H*0.083),host=measureHost(),n=days.length;
   var mode=(S.layout==='two')?'two':'one',base=mode==='one'?15:14.5,res=null,kmax=mode==='one'?1.6:1.6,k,i;
@@ -641,8 +641,24 @@ function pagePayload(fmt){var p=fitPage(fmt);return {html:pageHTML(fmt,p.mode,p.
 function fitTitles(root){Array.prototype.forEach.call(root.querySelectorAll('.ttl'),function(t){
   var box=t.parentElement,fs=64;t.style.fontSize=fs+'px';
   while(fs>28&&t.scrollWidth>box.clientWidth){fs--;t.style.fontSize=fs+'px'}})}
-function renderSheet(){
-  var host=$('#sheetHost'),pl=pagePayload(PFMT);PICK=pl.pick;host.innerHTML=pl.html;fitTitles(host);fit();markSheetRow()}
+/* keep the page exactly where it is while content is re-drawn (no jump to top, even by a point) */
+var SCROLL_LOCK=false;
+function scrollNow(y){try{window.scrollTo({top:y,left:0,behavior:'instant'})}catch(e){window.scrollTo(0,y)}}
+function releaseScrollLock(){SCROLL_LOCK=false;document.body.style.minHeight=''}
+function keepScroll(fn){
+  var y=window.pageYOffset||0,de=document.documentElement,bs=document.body.style;
+  var old=bs.minHeight,h=Math.max(de.scrollHeight,document.body.scrollHeight);
+  if(!SCROLL_LOCK)bs.minHeight=h+'px';
+  try{fn()}finally{
+    if(Math.abs((window.pageYOffset||0)-y)>0.5)scrollNow(y);
+    requestAnimationFrame(function(){
+      if(SCROLL_LOCK)return;
+      bs.minHeight=old;
+      if(Math.abs((window.pageYOffset||0)-y)>0.5){
+        /* page really got shorter than the old position (e.g. the day sheet closed): keep the room instead of jumping */
+        SCROLL_LOCK=true;bs.minHeight=(y+window.innerHeight)+'px';scrollNow(y)}})}}
+function renderSheet(){keepScroll(function(){
+  var host=$('#sheetHost'),pl=pagePayload(PFMT);PICK=pl.pick;host.innerHTML=pl.html;fitTitles(host);fit();markSheetRow()})}
 if(document.fonts&&document.fonts.addEventListener)document.fonts.addEventListener('loadingdone',function(){var h=$('#sheetHost');if(h)fitTitles(h)});
 function fit(){
   var box=$('#stagebox'),host=$('#sheetHost');if(!box||!host)return;
@@ -835,10 +851,10 @@ function renderFeasts(){
     box.appendChild(r)})}
 
 function safe(f){try{f()}catch(e){console.error(e)}}
-function renderAll(){closeSheet();CY=CY||VY;[renderHeader,renderChips,renderSheet,renderMem,renderSug,renderDays,renderCalc,renderSettings,renderReviewCard,renderPeriods].forEach(safe)}
+function renderAll(){keepScroll(function(){closeSheet();CY=CY||VY;[renderHeader,renderChips,renderSheet,renderMem,renderSug,renderDays,renderCalc,renderSettings,renderReviewCard,renderPeriods].forEach(safe)})}
 
 /* ---------- events ---------- */
-function setTab(t,keepScroll){tab=t;closeSheet();
+function setTab(t,keepScrollPos){tab=t;closeSheet();releaseScrollLock();
   ['preview','days','periods','settings'].forEach(function(k){
     var el=$('#p-'+k);if(!el)return;var on=(k===t);
     el.hidden=!on;el.classList.toggle('on',on);el.setAttribute('aria-hidden',on?'false':'true');
@@ -846,7 +862,7 @@ function setTab(t,keepScroll){tab=t;closeSheet();
   document.querySelectorAll('.tabs button').forEach(function(b){var on=b.dataset.tab===t;b.setAttribute('aria-selected',on?'true':'false')});
   var pk=$('#picker');if(pk&&!pk.hidden){pk.hidden=true;$('#mPick').setAttribute('aria-expanded','false')}
   if(t==='preview')fit();
-  if(!keepScroll)window.scrollTo(0,0)}
+  if(!keepScrollPos)window.scrollTo(0,0)}
 document.querySelectorAll('.tabs button').forEach(function(b){b.onclick=function(){setTab(b.dataset.tab)}});
 function moveMonth(dx){VM+=dx;if(VM>12){VM=1;VY++}if(VM<1){VM=12;VY--}expanded=null;CY=VY;renderAll()}
 $('#cyNext').onclick=function(){CY++;renderCalc()};$('#cyPrev').onclick=function(){CY--;renderCalc()};
@@ -1266,7 +1282,7 @@ function swipeTarget(t){
 var TABS=['preview','days','periods','settings'];
 function tabTarget(t){
   if(!t||!t.closest)return false;
-  if(!t.closest('.panel.on'))return false;
+  if(!(t===document.body||t===document.documentElement||t.closest('#app')))return false;
   if(swipeTarget(t))return false;
   if(t.closest('input,select,textarea,.editor,#sheet,#picker,.undobar,.tabs,[data-noswipe]'))return false;
   for(var n=t;n&&n!==document.body;n=n.parentElement){

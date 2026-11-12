@@ -198,6 +198,15 @@ body.sheet-open{padding-bottom:62vh}
 .undobar span{min-width:0;overflow-wrap:anywhere}
 .undobar button{flex:none;border:0;border-radius:10px;min-height:36px;padding:6px 14px;font-weight:700;background:var(--accent);color:var(--on-accent)}
 .toast{bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:60}
+.dlg{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.4);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.dlg[hidden]{display:none!important}
+.dlgbox{width:min(300px,100%);background:var(--surface);border:1px solid var(--line);border-radius:20px;overflow:hidden;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.35);animation:dlgin .22s cubic-bezier(.22,1,.36,1)}
+.dlgbox p{margin:0;padding:20px 18px;font-size:15px;line-height:1.7}
+.dlgbtns{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line)}
+.dlgbtns button{border:0;background:transparent;min-height:48px;font-size:16px;color:var(--accent)}
+.dlgbtns button+button{border-right:1px solid var(--line)}
+.dlgbtns button.ok{font-weight:700}
+@keyframes dlgin{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 .panel.on{animation:pgin .28s ease}
 @keyframes pgin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -355,6 +364,7 @@ body.sheet-open{padding-bottom:62vh}
 </section>
 <div class="undobar" id="undoBar" role="status" aria-live="polite"><span id="undoTxt"></span><button type="button" id="undoBtn"></button></div>
 <div class="toast" id="toast" hidden></div>
+<div class="dlg" id="dlg" role="alertdialog" aria-modal="true" aria-labelledby="dlgTxt" hidden><div class="dlgbox"><p id="dlgTxt"></p><div class="dlgbtns"><button type="button" id="dlgNo">إلغاء</button><button type="button" id="dlgOk" class="ok">متابعة</button></div></div></div>
 
 <script src="vendor/html2canvas.min.js" onerror="void 0"></script>
 <script>
@@ -654,9 +664,10 @@ function fitPage(fmt){
         if(host.querySelector('.pgc').offsetHeight<=avail){res={mode:'one',k:k,fs:base*k,ok:true,days:days};break}}}
     if(!res)res={mode:'one',k:0.5,fs:base*0.5,ok:false,days:days};
     host.innerHTML='';return res}
-  /* two columns: the right column (days 1..s) must stay above the chalice; the left column goes lower */
-  var LR=0.625,LL=0.81,limR=P.H*LR,limL=P.H*LL,gap=(S.design==='cards');
-  for(k=kmax;k>=0.5&&!res;k-=0.03){
+  /* two columns: the right column (days 1..s) must stay above the chalice and the wheat (60% of the page height); the left column may go lower */
+  var LR=0.60,LL=0.81,limR=P.H*LR,limL=P.H*LL,gap=(S.design==='cards'),kmax2=1;
+  /* the size never grows beyond the normal size (a short month stays compact instead of stretching down to the chalice); it only shrinks when many rows need to fit */
+  for(k=kmax2;k>=0.5&&!res;k-=0.03){
     host.innerHTML=pageHTML(fmt,'two',k,days,n);
     var pgc=host.querySelector('.pgc'),blk=pgc.children[0]&&pgc.querySelector('div[style*="flex:1;min-width:0"] > div');
     if(!blk||!n)break;
@@ -766,7 +777,13 @@ function renderSug(){
     all.onclick=function(){L.forEach(function(x){applySug(x.key,x.s)});persist();renderAll();toast('تم اعتماد '+L.length+' مقترحات')};h.appendChild(all)}
   box.appendChild(h)}
 
-function confirmLordMem(){return window.confirm('تنبيه: في شهري طوبة وأمشير لا يوجد تذكار الأعياد السيدية. هل أنت متأكد من أنك تريد إضافته؟')}
+function askConfirm(msg,okText){return new Promise(function(res){
+  var d=$('#dlg'),done=function(v){d.hidden=true;document.removeEventListener('keydown',esc,true);res(v)},esc=function(e){if(e.key==='Escape'){e.stopPropagation();done(false)}};
+  $('#dlgTxt').textContent=msg;$('#dlgOk').textContent=okText||'متابعة';
+  $('#dlgOk').onclick=function(){done(true)};$('#dlgNo').onclick=function(){done(false)};
+  d.onclick=function(e){if(e.target===d)done(false)};
+  document.addEventListener('keydown',esc,true);d.hidden=false;$('#dlgOk').focus()})}
+function confirmLordMem(global){return askConfirm(global?'تنبيه: تفعيل تذكار الأعياد السيدية افتراضيًا سيضيفه في كل شهر، ومنها شهرا طوبة وأمشير اللذان لا يوجد فيهما هذا التذكار. هل تريد المتابعة؟':'تنبيه: في شهري طوبة وأمشير لا يوجد تذكار الأعياد السيدية. هل أنت متأكد من أنك تريد إضافته؟','إضافة')}
 function memOn(x){var mo=mget(false);return (mo.mem&&typeof mo.mem[x.id]==='boolean')?mo.mem[x.id]:!!S.memDefault[x.id]}
 function renderMem(){
   var box=$('#memBox');box.innerHTML='';
@@ -776,7 +793,9 @@ function renderMem(){
     var on=memOn(x),b=document.createElement('button');b.type='button';b.className='memrow'+(dates.length?'':' none');b.setAttribute('aria-pressed',on);
     var where=dates.length?dates.map(function(z){return DAYS[z.wd]+' '+n(z.d)+'/'+n(VM)+' ('+n(z.c.d)+' '+CMON[z.c.m-1]+')'}).join(' و '):'لا يقع هذا التذكار في هذا الشهر';
     b.innerHTML='<span><b>'+(on?'تمت إضافة ':'إضافة ')+x.short+' — '+n(x.d)+' قبطي</b><small>'+where+'</small></span><span class="st">'+(on?'إلغاء':'إضافة')+'</span>';
-    b.onclick=function(){if(!on&&x.id==='lord'&&!confirmLordMem())return;var mo=mget(true);if(!mo.mem)mo.mem={};mo.mem[x.id]=!on;persist();renderAll();toast((on?'تم إلغاء ':'تمت إضافة ')+x.short)};
+    b.onclick=function(){var go=function(){var mo=mget(true);if(!mo.mem)mo.mem={};mo.mem[x.id]=!on;persist();renderAll();toast((on?'تم إلغاء ':'تمت إضافة ')+x.short)};
+      /* ask only when the 29th falls in Toba / Amshir (no Lord feasts memorial there) */
+      if(!on&&x.id==='lord'&&dates.some(function(z){return z.c.m===5||z.c.m===6}))confirmLordMem(false).then(function(ok){if(ok)go()});else go()};
     box.appendChild(b)})}
 
 function renderCalc(){
@@ -904,7 +923,7 @@ $('#easterSet').onclick=function(){var v=$('#easterDate').value;if(!v){toast('ا
   if(+v.slice(0,4)!==CY){toast('التاريخ لازم يكون في سنة '+n(CY));return}
   S.easterOv[CY]=v;persist();renderAll();toast('تم تعديل تاريخ القيامة')};
 $('#easterAuto').onclick=function(){delete S.easterOv[CY];persist();renderAll();toast('رجع الحساب التلقائي')};
-['angel','virgin','lord'].forEach(function(id){$('#md'+id).onclick=function(){if(id==='lord'&&!S.memDefault[id]&&!confirmLordMem())return;S.memDefault[id]=!S.memDefault[id];persist();renderAll()}});
+['angel','virgin','lord'].forEach(function(id){$('#md'+id).onclick=function(){var go=function(){S.memDefault[id]=!S.memDefault[id];persist();renderAll()};if(id==='lord'&&!S.memDefault[id])confirmLordMem(true).then(function(ok){if(ok)go()});else go()}});
 $('#next').onclick=function(){moveMonth(1)};$('#prev').onclick=function(){moveMonth(-1)};
 $('#priestsMonth').onclick=function(){var mo=mget(true),cur=(typeof mo.priests==='boolean')?mo.priests:S.priests;mo.priests=!cur;persist();renderAll()};
 $('#priestsGlobal').onclick=function(){S.priests=!S.priests;persist();renderAll()};
@@ -1352,15 +1371,57 @@ document.addEventListener('touchstart',function(e){
   var kind=swipeTarget(e.target)?'month':(tabTarget(e.target)?'tab':'');
   if(!kind)return;
   SW={x:t.clientX,y:t.clientY,t:Date.now(),k:kind}},{passive:true});
-document.addEventListener('touchmove',function(e){if(SW&&e.touches.length>1)SW=null},{passive:true});
-document.addEventListener('touchcancel',function(){SW=null},{passive:true});
+/* month swipe on the schedule image: the page follows the finger, then settles with a spring (iOS-like) */
+var EASE_OUT='cubic-bezier(.22,1,.36,1)',EASE_SPRING='cubic-bezier(.34,1.45,.64,1)';
+function reduceMotion(){return window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches}
+function dragMonth(el,dx){
+  var w=el.offsetWidth||320,x=dx*0.85,p=Math.min(Math.abs(x)/(w*0.9),1);
+  el.style.transition='none';el.style.willChange='transform,opacity';
+  el.style.transform='translate3d('+x.toFixed(1)+'px,0,0)';el.style.opacity=(1-p*0.45).toFixed(3)}
+function settleMonth(el,dx,commit,dir){
+  var w=el.offsetWidth||320,x=dx*0.85,o=parseFloat(el.style.opacity)||1;
+  el.style.transform='';el.style.opacity='';el.style.transition='';el.style.willChange='';
+  if(!el.animate){if(commit)moveMonth(dir);return}
+  if(!commit){el.animate([{transform:'translate3d('+x+'px,0,0)',opacity:o},{transform:'translate3d(0,0,0)',opacity:1}],{duration:420,easing:EASE_SPRING});return}
+  var sign=dir>0?1:-1;
+  var out=el.animate([{transform:'translate3d('+x+'px,0,0)',opacity:o},{transform:'translate3d('+(sign*w*0.45)+'px,0,0)',opacity:0}],{duration:170,easing:'cubic-bezier(.4,0,1,1)',fill:'forwards'});
+  out.onfinish=function(){
+    moveMonth(dir);
+    var el2=$('#p-preview .stage')||el;
+    out.cancel();
+    el2.animate([{transform:'translate3d('+(-sign*w*0.18)+'px,0,0)',opacity:0},{transform:'translate3d(0,0,0)',opacity:1}],{duration:380,easing:EASE_OUT})}}
+document.addEventListener('touchmove',function(e){
+  if(!SW)return;
+  if(e.touches.length>1){if(SW.k==='month'&&SW.lock==='h'){var el0=$('#p-preview .stage');if(el0)settleMonth(el0,SW.dx||0,false,0)}SW=null;return}
+  if(SW.k!=='month')return;
+  var t=e.touches[0],dx=t.clientX-SW.x,dy=t.clientY-SW.y,now=Date.now();
+  if(!SW.lock){
+    if(Math.abs(dy)>10&&Math.abs(dy)>Math.abs(dx)){SW=null;return}
+    if(Math.abs(dx)>12&&Math.abs(dx)>Math.abs(dy)*1.3){SW.lock='h';SW.x0=SW.x+(dx>0?12:-12)}
+    else return}
+  var el=$('#p-preview .stage');if(!el)return;
+  dx=t.clientX-SW.x0;
+  if(SW.lt){var dt=now-SW.lt;if(dt>0)SW.v=0.8*(SW.v||0)+0.2*((t.clientX-SW.lx)/dt)}
+  SW.lx=t.clientX;SW.lt=now;SW.dx=dx;
+  dragMonth(el,dx)},{passive:true});
+document.addEventListener('touchcancel',function(){
+  if(SW&&SW.k==='month'&&SW.lock==='h'){var el=$('#p-preview .stage');if(el)settleMonth(el,SW.dx||0,false,0)}
+  SW=null},{passive:true});
 document.addEventListener('touchend',function(e){
   if(!SW)return;var s=SW;SW=null;var t=e.changedTouches[0];
-  var dx=t.clientX-s.x,dy=t.clientY-s.y;
-  var need=s.k==='tab'?80:70,ratio=s.k==='tab'?1.8:1.6;
-  if(Math.abs(dx)<need||Math.abs(dx)<Math.abs(dy)*ratio||Date.now()-s.t>700)return;
+  if(s.k==='month'){
+    if(s.lock!=='h')return;
+    var el=$('#p-preview .stage');if(!el)return;
+    lastSwipe=Date.now();
+    var dx=s.dx||0,w=el.offsetWidth||320,v=s.v||0;
+    var commit=Math.abs(dx)>w*0.25||(Math.abs(v)>0.5&&Math.abs(dx)>28);
+    if(commit&&reduceMotion()){el.style.transform='';el.style.opacity='';el.style.transition='';moveMonth(dx>0?1:-1);return}
+    if(commit&&navigator.vibrate){try{navigator.vibrate(8)}catch(_){}}
+    settleMonth(el,dx,commit,dx>0?1:-1);return}
+  var dx2=t.clientX-s.x,dy=t.clientY-s.y;
+  if(Math.abs(dx2)<80||Math.abs(dx2)<Math.abs(dy)*1.8||Date.now()-s.t>700)return;
   lastSwipe=Date.now();
-  if(s.k==='tab')swipeTab(dx>0?1:-1);else swipeMonth(dx>0?1:-1)},{passive:true});
+  swipeTab(dx2>0?1:-1)},{passive:true});
 
 /* ---------- undo / redo bar ---------- */
 var barTimer=null;

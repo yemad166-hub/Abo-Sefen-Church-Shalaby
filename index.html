@@ -318,7 +318,7 @@ body.sheet-open{padding-bottom:62vh}
       <div id="easterBig"></div>
       <div class="row"><input type="date" id="easterDate" style="flex:1;min-width:150px" aria-label="تاريخ القيامة يدويًا">
         <button class="btn small" id="easterSet">تعديل يدوي</button><button class="btn small" id="easterAuto">الحساب التلقائي</button></div>
-      <p class="hint">الحساب بالطريقة الكنسية (التقويم اليولياني) ثم يضاف ١٣ يومًا للميلادي، وهذا صحيح من سنة ١٩٠٠ إلى ٢١٠٠. كل البصخة والصعود وحلول الروح القدس وصوم الرسل تتحسب من القيامة.</p>
+      <p class="hint">الحساب بالطريقة الكنسية (التقويم اليولياني) ثم يضاف فرق التقويمين للميلادي (١٣ يومًا من ١٩٠٠ إلى ٢٠٩٩، و١٤ يومًا من ٢١٠٠). كل البصخة والصعود وحلول الروح القدس وصوم الرسل تتحسب من القيامة.</p>
       <div id="movList"></div>
     </div>
     <div class="card" style="margin-top:14px"><h3>التذكارات الشهرية</h3>
@@ -385,7 +385,7 @@ function jdn(y,m,d){var a=Math.floor((14-m)/12),yy=y+4800-a,mm=m+12*a-3;
 function coptic(y,m,d){var j=jdn(y,m,d),E=1825030,yr=Math.floor((4*(j-E)+1463)/1461),
   st=E+365*(yr-1)+Math.floor(yr/4),doy=j-st;return {y:yr,m:Math.floor(doy/30)+1,d:doy%30+1}}
 function easter(y){var a=y%4,b=y%7,c=y%19,d=(19*c+15)%30,e=(2*a+4*b-d+34)%7,
-  mo=Math.floor((d+e+114)/31),da=(d+e+114)%31+1;return new Date(Date.UTC(y,mo-1,da+13))}
+  mo=Math.floor((d+e+114)/31),da=(d+e+114)%31+1;return new Date(Date.UTC(y,mo-1,da+Math.floor(y/100)-Math.floor(y/400)-2))}
 function pad(n){return n<10?'0'+n:''+n}
 function keyOf(dt){return dt.getUTCFullYear()+'-'+pad(dt.getUTCMonth()+1)+'-'+pad(dt.getUTCDate())}
 function T(h,p,mi,t){var o={h:h,mi:mi||0,p:p};if(t)o.t=t;return o}
@@ -783,7 +783,7 @@ function askConfirm(msg,okText){return new Promise(function(res){
   $('#dlgOk').onclick=function(){done(true)};$('#dlgNo').onclick=function(){done(false)};
   d.onclick=function(e){if(e.target===d)done(false)};
   document.addEventListener('keydown',esc,true);d.hidden=false;$('#dlgOk').focus()})}
-function confirmLordMem(global){return askConfirm(global?'تنبيه: تفعيل تذكار الأعياد السيدية افتراضيًا سيضيفه في كل شهر، ومنها شهرا طوبة وأمشير اللذان لا يوجد فيهما هذا التذكار. هل تريد المتابعة؟':'تنبيه: في شهري طوبة وأمشير لا يوجد تذكار الأعياد السيدية. هل أنت متأكد من أنك تريد إضافته؟','إضافة')}
+function confirmLordMem(){return askConfirm('تنبيه: في شهري طوبة وأمشير لا يوجد تذكار الأعياد السيدية. هل أنت متأكد من أنك تريد إضافته؟','إضافة')}
 function memOn(x){var mo=mget(false);return (mo.mem&&typeof mo.mem[x.id]==='boolean')?mo.mem[x.id]:!!S.memDefault[x.id]}
 function renderMem(){
   var box=$('#memBox');box.innerHTML='';
@@ -795,7 +795,7 @@ function renderMem(){
     b.innerHTML='<span><b>'+(on?'تمت إضافة ':'إضافة ')+x.short+' — '+n(x.d)+' قبطي</b><small>'+where+'</small></span><span class="st">'+(on?'إلغاء':'إضافة')+'</span>';
     b.onclick=function(){var go=function(){var mo=mget(true);if(!mo.mem)mo.mem={};mo.mem[x.id]=!on;persist();renderAll();toast((on?'تم إلغاء ':'تمت إضافة ')+x.short)};
       /* ask only when the 29th falls in Toba / Amshir (no Lord feasts memorial there) */
-      if(!on&&x.id==='lord'&&dates.some(function(z){return z.c.m===5||z.c.m===6}))confirmLordMem(false).then(function(ok){if(ok)go()});else go()};
+      if(!on&&x.id==='lord'&&dates.some(function(z){return z.c.m===5||z.c.m===6}))confirmLordMem().then(function(ok){if(ok)go()});else go()};
     box.appendChild(b)})}
 
 function renderCalc(){
@@ -923,7 +923,7 @@ $('#easterSet').onclick=function(){var v=$('#easterDate').value;if(!v){toast('ا
   if(+v.slice(0,4)!==CY){toast('التاريخ لازم يكون في سنة '+n(CY));return}
   S.easterOv[CY]=v;persist();renderAll();toast('تم تعديل تاريخ القيامة')};
 $('#easterAuto').onclick=function(){delete S.easterOv[CY];persist();renderAll();toast('رجع الحساب التلقائي')};
-['angel','virgin','lord'].forEach(function(id){$('#md'+id).onclick=function(){var go=function(){S.memDefault[id]=!S.memDefault[id];persist();renderAll()};if(id==='lord'&&!S.memDefault[id])confirmLordMem(true).then(function(ok){if(ok)go()});else go()}});
+['angel','virgin','lord'].forEach(function(id){$('#md'+id).onclick=function(){var go=function(){S.memDefault[id]=!S.memDefault[id];persist();renderAll()};go()}});
 $('#next').onclick=function(){moveMonth(1)};$('#prev').onclick=function(){moveMonth(-1)};
 $('#priestsMonth').onclick=function(){var mo=mget(true),cur=(typeof mo.priests==='boolean')?mo.priests:S.priests;mo.priests=!cur;persist();renderAll()};
 $('#priestsGlobal').onclick=function(){S.priests=!S.priests;persist();renderAll()};
@@ -1481,5 +1481,20 @@ function mark(){var p=T.get();box.querySelectorAll('button').forEach(function(b)
 box.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){T.set(b.dataset.th);mark()})});
 mark();window.addEventListener('themechange',mark);
 var tb=document.getElementById('themeBtn');if(tb)tb.addEventListener('click',function(){T.set(T.isDark(T.get())?'light':'dark')})})();
+</script>
+<script>
+/* day sheet: stay above the on-screen keyboard and keep the focused field visible */
+(function(){var sh=document.getElementById('sheet'),body=document.getElementById('sheetBody'),vv=window.visualViewport;if(!sh||!body)return;
+function reveal(){var a=document.activeElement;if(!a||!sh.contains(a)||!/INPUT|SELECT|TEXTAREA/.test(a.tagName))return;
+  var r=a.getBoundingClientRect(),b=body.getBoundingClientRect();
+  if(r.bottom>b.bottom-10||r.top<b.top+10){body.scrollTop+=(r.top-b.top)-Math.max(10,(b.height-r.height)/2)}}
+function upd(){var kb=0,h=window.innerHeight;
+  if(vv){kb=Math.max(0,window.innerHeight-vv.height-vv.offsetTop);h=vv.height}
+  if(kb>80){sh.style.bottom=kb+'px';sh.style.maxHeight=Math.max(180,h-12)+'px';sh.style.paddingBottom='0px';setTimeout(reveal,60)}
+  else{sh.style.bottom='';sh.style.maxHeight='';sh.style.paddingBottom=''}}
+if(vv){vv.addEventListener('resize',upd);vv.addEventListener('scroll',upd)}else window.addEventListener('resize',upd);
+sh.addEventListener('focusin',function(e){if(!/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;setTimeout(function(){upd();reveal()},350)});
+sh.addEventListener('focusout',function(){setTimeout(upd,150)});
+})();
 </script>
 </body></html>

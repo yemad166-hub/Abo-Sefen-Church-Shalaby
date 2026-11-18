@@ -255,7 +255,6 @@ body.sheet-open{padding-bottom:62vh}
   </section>
 
   <section id="p-days" class="panel" hidden>
-    <div class="card rv" id="reviewCard" style="margin-bottom:14px"></div>
     <div class="card" style="gap:14px">
       <div class="switch"><span>اجتماع الكهنة أول سبت في هذا الشهر</span><button id="priestsMonth" aria-pressed="true" aria-label="اجتماع الكهنة"></button></div>
       <div id="memBox" style="display:flex;flex-direction:column;gap:8px"></div>
@@ -305,6 +304,8 @@ body.sheet-open{padding-bottom:62vh}
       <div class="switch"><span>أرقام عربية (١٢٣)</span><button id="digitsAr" aria-pressed="true" aria-label="أرقام عربية"></button></div>
       <div><div class="hint" style="margin-bottom:6px">ميعاد القداس في العيد الذي يقع في يوم بلا قداس</div><div id="feastTime"></div></div>
       <div><div class="hint" style="margin-bottom:6px">ميعاد قداس الميلاد (مساء ٦ يناير، ليلة العيد)</div><div id="natTime"></div></div>
+      <div><div class="hint" style="margin-bottom:6px">ميعاد قداس البرامون صباح ٦ يناير (لو اليوم بلا قداس عادي)</div><div id="barTime"></div></div>
+      <div><div class="hint" style="margin-bottom:6px">ميعاد قداس الغطاس (مساء ١٠ طوبة، ليلة العيد)</div><div id="epiTime"></div></div>
       <div><div class="hint" style="margin-bottom:6px">ميعاد قداس القيامة (مساء سبت النور)</div><div id="eastTime"></div></div>
       <label class="f">سطر أسفل الجدول (اختياري)<input type="text" id="footer" placeholder="مثال: المواعيد قابلة للتغيير"></label>
     </div>
@@ -399,20 +400,18 @@ function defaults(){return {
     {m:1,d:1,name:'عيد النيروز',type:'feast'},
     {m:1,d:17,name:'عيد الصليب المجيد',type:'feast'},{m:1,d:18,name:'عيد الصليب المجيد',type:'feast'},{m:1,d:19,name:'عيد الصليب المجيد',type:'feast'},
     {m:3,d:25,name:'عيد الشهيد أبو سيفين',type:'feast'},
-    {m:3,d:29,name:'تذكار الأعياد السيدية',type:'feast'},
     {m:5,d:6,name:'عيد الختان المجيد',type:'feast'},
-    {m:5,d:10,name:'برامون الغطاس',type:'feast'},
-    {m:5,d:11,name:'عيد الغطاس المجيد',type:'feast'},
     {m:5,d:13,name:'عيد عرس قانا الجليل',type:'feast'},
     {m:6,d:8,name:'دخول السيد المسيح الهيكل',type:'feast'},
     {m:7,d:10,name:'عيد الصليب المجيد',type:'feast'},
+    {m:7,d:29,name:'عيد البشارة المجيد',type:'feast'},
     {m:9,d:24,name:'دخول السيد المسيح أرض مصر',type:'feast'},
     {m:10,d:9,name:'عيد الشهيد أبو سيفين',type:'feast'},
     {m:11,d:5,name:'عيد الآباء الرسل',type:'feast'},
     {m:12,d:13,name:'عيد التجلي المجيد',type:'feast'},
     {m:12,d:16,name:'تذكار ظهور جسد العذراء مريم',type:'feast'}
   ],
-  memDefault:{angel:false,virgin:false,lord:false},easterOv:{},periods:[],alt:{},nativityTime:T(9,'pm'),easterTime:T(10,'pm'),ver:3,
+  memDefault:{angel:false,virgin:false,lord:false},easterOv:{},periods:[],alt:{},nativityTime:T(9,'pm'),baramonTime:T(8,'am'),epiphanyTime:T(5,'pm'),easterTime:T(10,'pm'),ver:6,
   logos:{church:null,diocese:null},months:{}}}
 var MEM=[{id:'angel',d:12,name:'تذكار الملاك ميخائيل',short:'تذكار الملاك'},
          {id:'virgin',d:21,name:'تذكار العذراء',short:'تذكار العذراء'},
@@ -422,7 +421,10 @@ function load(){var d=defaults();try{var raw=localStorage.getItem(STORE);if(raw)
   for(var k in o){d[k]=o[k]}
   if((o.ver||0)<2){d.feasts=defaults().feasts}
   if((o.ver||0)<3){d.feasts=(d.feasts||[]).filter(function(f){return !(f.m===4&&(f.d===28||f.d===29)&&(f.type==='nativity'||String(f.name).indexOf('الميلاد')>=0))})}
-  d.ver=3;if(!Array.isArray(d.periods))d.periods=[];if(!d.alt)d.alt={}}}catch(e){}return d}
+  if((o.ver||0)<4){d.feasts=(d.feasts||[]).filter(function(f){return !(f.m===5&&(f.d===10||f.d===11)&&String(f.name).indexOf('الغطاس')>=0)})}
+  if((o.ver||0)<5){d.feasts=(d.feasts||[]).filter(function(f){return !(f.m===3&&f.d===29&&String(f.name).indexOf('الأعياد السيدية')>=0)})}
+  if((o.ver||0)<6){d.feasts=d.feasts||[];if(!d.feasts.some(function(f){return f.m===7&&f.d===29&&String(f.name).indexOf('البشارة')>=0}))d.feasts.push({m:7,d:29,name:'عيد البشارة المجيد',type:'feast'})}
+  d.ver=6;if(!Array.isArray(d.periods))d.periods=[];if(!d.alt)d.alt={}}}catch(e){}return d}
 var UNDO=[],REDO=[],BASE=null,BASESTR='',LASTPUSH={t:0,l:''},SKIPREC=false;
 function snap(){var o=JSON.parse(JSON.stringify(S)),k,m;
   for(k in (o.months||{})){m=o.months[k];if(!m||(Object.keys(m).length===1&&m.days&&!Object.keys(m.days).length))delete o.months[k]}
@@ -482,16 +484,16 @@ var TY={
  normal:{name:'عادي'},
  priests:{name:'اجتماع الكهنة',bg:'#EEE9DA',fg:'#5A5340',ac:'#9C8F6A',icon:'cross'},
  feast:{name:'عيد أو تذكار',bg:'#F8EBC6',fg:'#5B3A00',ac:'#B8892B',icon:'cross'},
- lent:{name:'الصوم الكبير',bg:'#EAE2F4',fg:'#3C2A63',ac:'#7A5FB0',icon:'cross'},
+ lent:{name:'الصوم الكبير',bg:'#F0EBF7',fg:'#3C2A63',ac:'#8A72B8',icon:'cross'},
  ascension:{name:'عيد الصعود',bg:'#DDEBF8',fg:'#0C3B6E',ac:'#378ADD',icon:'up'},
  pentecost:{name:'حلول الروح القدس',bg:'#FBE3D3',fg:'#7A2A0C',ac:'#D85A30',icon:'flame'},
  nativity:{name:'عيد الميلاد المجيد',hero:1,bg:'#0C2A52',fg:'#F6E7B8',ac:'#E8C867',icon:'star'},
- palm:{name:'أحد الشعانين',hero:1,bg:'#E3F0CF',fg:'#27500A',ac:'#5B9A25',icon:'palm'},
- mon:{name:'اثنين البصخة',hero:1,bg:'#EDE9C8',fg:'#463E0F',ac:'#8A7B1C',icon:'leaf'},
- tue:{name:'ثلاثاء البصخة',hero:1,bg:'#E4DDF2',fg:'#2F2160',ac:'#6A55B0',icon:'scroll'},
- wed:{name:'أربعاء البصخة',hero:1,bg:'#F4DDE6',fg:'#5E1630',ac:'#B5476E',icon:'jar'},
- thu:{name:'خميس العهد',hero:1,bg:'#5E1523',fg:'#F6E7B8',ac:'#E2B65A',icon:'cup'},
- fri:{name:'الجمعة العظيمة',hero:1,bg:'#262528',fg:'#E2DFD6',ac:'#8A8780',icon:'cross'},
+ palm:{name:'أحد الشعانين',hero:1,bg:'#E2EDD7',fg:'#2F5016',ac:'#6B9A3A',icon:'palm'},
+ mon:{name:'اثنين البصخة',hero:1,bg:'#EAE3F2',fg:'#3A2A5C',ac:'#8C78B8',icon:'leaf'},
+ tue:{name:'ثلاثاء البصخة',hero:1,bg:'#DCD0EA',fg:'#33224F',ac:'#7B63A8',icon:'scroll'},
+ wed:{name:'أربعاء البصخة',hero:1,bg:'#CDBFE0',fg:'#2B1B47',ac:'#6A4F9A',icon:'jar'},
+ thu:{name:'خميس العهد',hero:1,bg:'#4A2040',fg:'#F6E7B8',ac:'#E2B65A',icon:'cup'},
+ fri:{name:'الجمعة العظيمة',hero:1,bg:'#26222B',fg:'#E6E1D8',ac:'#9A948C',icon:'cross'},
  sat:{name:'سبت النور',hero:1,bg:'#E2EFFB',fg:'#0C3B6E',ac:'#378ADD',icon:'candle'},
  easter:{name:'عيد القيامة المجيد',hero:1,bg:'#FFF7D6',fg:'#6B4A00',ac:'#D9A927',icon:'sun'}
 };
@@ -508,7 +510,21 @@ function icon(name,size,color){
    candle:'<path d="M10 11h4v10h-4zM12 3c2 2 2 4 0 6-2-2-2-4 0-6z"/>',
    sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
    flame:'<path d="M12 2c1 4 5 6 5 11a5 5 0 01-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-4-1-6 1-10z"/>',
-   up:'<path d="M12 20V6M6 11l6-6 6 6M6 21h12"/>'}[name]||'';
+   up:'<path d="M12 20V6M6 11l6-6 6 6M6 21h12"/>',
+   baptism:'<path fill="currentColor" stroke="none" d="M12 1.2c-1.4 1-3 1.600-4.600 1.600 1.600.800 3 1.200 4.600 3.800 1.600-2.600 3-3 4.600-3.800C15 2.800 13.400 2.200 12 1.200z"/><circle cx="12" cy="10.400" r="2.300"/><path d="M7.400 17c0-3 2-4.400 4.600-4.400s4.600 1.400 4.600 4.400M2.500 19.200c1.500-1.500 3-1.500 4.500 0s3 1.500 4.500 0 3-1.500 4.500 0 3 1.500 4.500 0M2.500 22.200c1.500-1.500 3-1.500 4.500 0s3 1.500 4.500 0 3-1.500 4.500 0 3 1.500 4.500 0"/>',
+   jar2:'<path d="M8 3h8M9 3v3.500c-3 1.500-4 5-3.500 8.500.4 3 2 5 6.500 5s6.100-2 6.500-5c.5-3.500-.5-7-3.500-8.500V3M7 13c2 1.500 3.500-1.500 5 0s3 1.500 5 0"/>',
+   halo:'<ellipse cx="12" cy="4.500" rx="5" ry="1.800"/><circle cx="12" cy="14" r="5"/><path d="M10 14h.01M14 14h.01M10.500 16.500c.900.700 2.100.700 3 0"/>',
+   temple:'<path d="M3 9.500L12 4l9 5.500zM5.500 10v8M9.800 10v8M14.200 10v8M18.500 10v8M3 20.500h18M4 18h16"/>',
+   pyramid:'<path d="M2 20L11 5l9 15zM11 5v15M6.500 12.500h9"/><circle cx="19" cy="5" r="2"/>',
+   shield:'<path d="M12 3l7.500 3v6c0 4.500-3.200 7.500-7.500 9-4.300-1.500-7.500-4.500-7.500-9V6z"/><path d="M12 8v8M8.500 11.500h7"/>',
+   calendar:'<path d="M4 6h16v14H4zM4 10.500h16M8 3.500v4M16 3.500v4M12 13.500l1 2 2.200.3-1.600 1.500.4 2.200-2-1.100-2 1.100.4-2.200-1.600-1.500 2.200-.3z"/>',
+   book:'<path d="M3.500 5.500c3-1 6-.8 8.500 1.500 2.500-2.300 5.500-2.500 8.500-1.500v13c-3-1-6-.8-8.500 1.500-2.500-2.300-5.500-2.500-8.500-1.500zM12 7v13"/>',
+   fish:'<path d="M2.500 12c3-4.500 8.500-5.500 12.500-1.500l5-3.200v9.400l-5-3.200c-4 4-9.500 3-12.500-1.500zM7.500 11.200h.01"/>',
+   mountain:'<path d="M2 20.500l7.500-12.500 4 6 3-4 6 10.500zM12 2v2.500M6.500 4.200L8 6M17.500 4.200L16 6"/>',
+   crown:'<path d="M4 18.500h16M4 18.500L3 8.500l5 4 4-7 4 7 5-4-1 10zM12 5.500h.01"/>',
+   wing:'<path d="M3 15c1.500-7 7.500-10.500 18-9.500-.800 4.500-3.500 7.500-7.500 8.800l2 3.200c-3.500.5-6.500-.5-8.500-2.500zM9 14.500c2-.5 4.500-2 6.500-4.500"/>',
+   people:'<circle cx="8.500" cy="8" r="3"/><path d="M2.500 20c0-3.700 2.600-6 6-6s6 2.300 6 6"/><circle cx="17" cy="8.500" r="2.500"/><path d="M17.500 14c2.500.3 4.500 2.200 4.500 6"/>',
+   egg:'<path d="M12 3c4 0 7 6.200 7 11a7 7 0 01-14 0c0-4.800 3-11 7-11zM5.500 14l2.200 2 2.200-2 2.100 2 2.200-2 2.100 2 2.200-2"/>'}[name]||'';
   return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="'+color+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:'+color+';flex:none;display:block">'+p+'</svg>'}
 
 /* ---------- movable feasts (suggestions only) ---------- */
@@ -525,6 +541,7 @@ var SUG=[
  [-1,'سبت النور وقداس القيامة (مدرج تلقائيًا مساء اليوم)','sat',[],1],
  [0,'عيد القيامة المجيد (لا يُضاف قداس الصباح تلقائيًا)','easter',[],1],
  [1,'شم النسيم','feast',[T(8,'am')]],
+ [7,'أحد توما','normal',[],1],
  [39,'عيد الصعود','ascension',[T(7,'am')]],
  [49,'عيد حلول الروح القدس','pentecost',[T(7,'am'),T(5,'pm',0,'صلاة السجدة')]],
  [50,'بدء صوم الرسل','feast',[],1]
@@ -545,11 +562,22 @@ function esc(x){return String(x).replace(/[&<>"]/g,function(c){return {'&':'&amp
 function periodRule(key,wd){var r=null;(S.periods||[]).forEach(function(p){
   var q=p.wd&&p.wd[wd];
   if(key>=p.from&&key<=p.to&&q&&q.mode&&q.mode!=='asis'){r={mode:q.mode,times:q.times||[],alt:q.alt!==false,name:p.name||''}}});return r}
+/* Great Lent weekday masses (from the church's real schedule): Wednesday 1 pm, Thursday 12 noon */
+var LENT_DEF={3:[T(1,'noon')],4:[T(12,'noon')]};
+/* البرامون: استعداد بالصوم لعيدين فقط (الميلاد والغطاس): العيد الأحد = الجمعة والسبت، العيد الاثنين = الجمعة والسبت والأحد، غير ذلك = اليوم السابق فقط. لا يخص الختان ولا قانا */
+function baramonSets(y){var DAY=86400000,ev=[{k:'nat',name:'برامون الميلاد',f:Date.UTC(y,0,7)}],i,c;
+  for(i=17;i<=22;i++){c=coptic(y,1,i);if(c.m===5&&c.d===11){ev.push({k:'epi',name:'برامون الغطاس',f:Date.UTC(y,0,i)});break}}
+  ev.forEach(function(e){var w=new Date(e.f).getUTCDay(),cnt=w===1?3:(w===0?2:1),j;e.days=[];for(j=cnt;j>=1;j--)e.days.push(new Date(e.f-j*DAY))});
+  return ev}
+function baramonOf(y,m,d){if(m!==1)return null;var t=Date.UTC(y,0,d),ev=baramonSets(y),i,j;
+  for(i=0;i<ev.length;i++)for(j=0;j<ev[i].days.length;j++)if(ev[i].days[j].getTime()===t)return ev[i];
+  return null}
 function monthDays(y,m){
   var sug=suggestions(y),mo=S.months[y+'-'+pad(m)]||{days:{}},ov=mo.days||{};
   var priests=(typeof mo.priests==='boolean')?mo.priests:S.priests;
   var nd=new Date(Date.UTC(y,m,0)).getUTCDate(),out=[],fs=0,d;
-  var eve=keyOf(new Date(easterOf(y).getTime()-86400000));
+  var eve=keyOf(new Date(easterOf(y).getTime()-86400000)),eT=easterOf(y).getTime(),mvm={};
+  movable(y).forEach(function(x){if(x.off!==-1)mvm[x.key]=x});
   for(d=1;d<=nd;d++){if(new Date(Date.UTC(y,m-1,d)).getUTCDay()===6){fs=d;break}}
   for(d=1;d<=nd;d++){
     var wd=new Date(Date.UTC(y,m-1,d)).getUTCDay(),key=y+'-'+pad(m)+'-'+pad(d),c=coptic(y,m,d);
@@ -559,6 +587,8 @@ function monthDays(y,m){
     if(pr){perName=pr.name||'فترة';
       if(pr.mode==='none'){times=[];listed=false;alt=false}
       else{times=cl(pr.times);listed=times.length>0;alt=pr.alt}}
+    var off=Math.round((Date.UTC(y,m-1,d)-eT)/86400000);
+    if(!pr&&off>=-55&&off<=-10&&LENT_DEF[wd]){times=cl(LENT_DEF[wd]);listed=true}
     var f=null,i;for(i=0;i<S.feasts.length;i++){if(S.feasts[i].m===c.m&&S.feasts[i].d===c.d){f=S.feasts[i];break}}
     if(f){label=f.name;type=f.type||'feast';if(!listed){times=[cl(S.feastTime)];listed=true;alt=false}}
     MEM.forEach(function(x){
@@ -569,10 +599,22 @@ function monthDays(y,m){
         if(!listed){times=[cl(S.feastTime)];listed=true;alt=false}}});
     /* الميلاد: العيد ٧ يناير، وقداسه مساء ٦ يناير. لا يُضاف قداس صباح العيد تلقائيًا */
     if(m===1&&d===7){label=label?label+' · عيد الميلاد المجيد':'عيد الميلاد المجيد';if(type==='normal')type='feast'}
-    if(m===1&&d===6){var nt=cl(S.nativityTime);nt.t='قداس العيد';times.push(nt);label='عيد الميلاد المجيد (ليلة العيد)';type='nativity';listed=true;alt=false;auto=true}
+    if(m===1&&d===6){var nt=cl(S.nativityTime);nt.t='قداس العيد';if(!times.length&&!pr){var bt=cl(S.baramonTime||T(8,'am'));bt.t='البرامون';times.push(bt)}times.push(nt);label='برامون الميلاد · ليلة عيد الميلاد';type='nativity';listed=true;alt=false;auto=true}
+    /* الغطاس: قداسه مساء ١٠ طوبة (ليلة العيد). لا يُضاف قداس صباح ١١ طوبة تلقائيًا */
+    if(c.m===5&&c.d===10){var et2=cl(S.epiphanyTime||T(5,'pm'));et2.t='قداس العيد';if(!times.length&&!pr){var bt2=cl(S.baramonTime||T(8,'am'));bt2.t='البرامون';times.push(bt2)}times.push(et2);label='برامون الغطاس · ليلة عيد الغطاس';if(type==='normal'||type==='priests')type='feast';listed=true;alt=false;auto=true}
     /* القيامة: قداسها مساء سبت النور. لا يُضاف قداس صباح العيد تلقائيًا */
-    if(key===eve){var et=cl(S.easterTime);et.t='قداس القيامة';times=[et];label='سبت النور · ليلة القيامة';type='sat';listed=true;alt=false;auto=true}
+    if(key===eve){var et=cl(S.easterTime);delete et.t;times=[et];label='سبت النور · ليلة أبو غالمسيس';type='sat';listed=true;alt=false;auto=true}
     if(priests&&d===fs&&!auto){label='اجتماع الكهنة';type='priests';times=[];noMass=true;listed=true;alt=false}
+    var bm=auto?null:baramonOf(y,m,d);
+    if(bm){if(!label)label=bm.name;else if(label.indexOf('برامون')<0)label=label+' · '+bm.name;if(type==='normal')type='feast'}
+    /* movable feasts tied to Easter: their names are written automatically on days already listed (times stay as set) */
+    var mv=mvm[key];
+    if(mv&&!auto){if(type==='priests'){label='';noMass=false}var mlab=String(mv.label).replace(/\s*\(.*$/,'');
+      if(!label)label=mlab;else if(label.indexOf(mlab)<0)label=mlab+' · '+label;
+      if(mv.type!=='normal')type=mv.type;
+      if(!pr){
+        if(!mv.info&&mv.times.length){times=cl(mv.times);listed=true;noMass=false}
+        else if(mv.off===0){times=[T(6,'pm',0,'قداس العيد')];listed=true;noMass=false}}}
     var o=ov[key];
     if(o){if(o.hidden){listed=false}else{listed=true;
       if(typeof o.label==='string')label=o.label;if(o.type)type=o.type;
@@ -585,7 +627,7 @@ function monthDays(y,m){
 /* ---------- sheet rendering ---------- */
 var DES={
 classic:{name:'نبيتي',sw:['#7A1F2B','#B8892B','#FBF5E6'],paper:'#FBF5E6',frame:'3px double #B8892B',title:'#7A1F2B',mon:'#B8892B',headBg:'#7A1F2B',headFg:'#F6E7B8',line:'#D9C28A',rowA:'#FFFCF2',rowB:'#F7EFD6',text:'#3B1B1F',sub:'#8A6A2A',pill:null,r:0,gap:0},
- modern:{name:'كحلي',sw:['#14325C','#B8892B','#F6F8FC'],paper:'#F6F8FC',frame:'3px double #B8892B',title:'#14325C',mon:'#B8892B',headBg:'#14325C',headFg:'#F6E7B8',line:'#C5CFE0',rowA:'#FBFCFE',rowB:'#EDF1F8',text:'#12233F',sub:'#5B6F8F',pill:null,r:0,gap:0},
+ modern:{name:'كحلي',sw:['#14325C','#B8892B','#F6F8FC'],paper:'#F6F8FC',frame:'3px double #B8892B',title:'#14325C',mon:'#B8892B',headBg:'#14325C',headFg:'#F6E7B8',line:'#C5CFE0',rowA:'#FBFCFE',rowB:'#EDF1F8',text:'#12233F',sub:'#5B6F8F',pill:null,r:0,gap:0,sp:{feast:{bg:'#DCE6F5',fg:'#14325C',ac:'#B8892B'},priests:{bg:'#E8ECF3',fg:'#3F4F6B',ac:'#7F90AE'}}},
  cards:{name:'بطاقات',sw:['#76767C','#E5E5EA','#FAF9F5'],paper:'#FAF9F5',frame:'none',title:'#3A3A3C',mon:'#6E6E73',headBg:'#76767C',headFg:'#FFFFFF',line:'#E1DFD8',rowA:'#FAF9F5',rowB:'#F2F0EA',text:'#2C2C2E',sub:'#6E6E73',pill:['#707076','#FFFFFF'],circ:['#E5E5EA','#2C2C2E'],r:12,gap:6}
 };
 var F='font-family:Cairo,Tahoma,sans-serif;';
@@ -608,35 +650,68 @@ function timeCell(dy,fs,sp,fg,D,dark){
     return '<span style="'+st+'">'+fmtTime(t)+'</span>'});
   var sep='<span style="font-size:.8em;opacity:.75">و</span>';
   return '<div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:'+Math.round(fs*.2)+'px '+Math.round(fs*.45)+'px">'+items.join(dy.alt?sep:'')+'</div>'}
+function feastIcon(dy,ty){
+  if(dy.type!=='feast'&&dy.type!=='priests'&&dy.type!=='lent')return ty.icon;
+  var t=String(dy.label||'');
+  var K=[['اجتماع الكهنة','people'],['صوم الرسل','fish'],['برامون الميلاد','star'],['الغطاس','baptism'],['برامون','baptism'],['قانا','jar2'],['الختان','halo'],['الهيكل','temple'],['أرض مصر','pyramid'],['الصليب','cross'],
+    ['سيفين','shield'],['جرجس','shield'],['الشهيد','shield'],['النيروز','calendar'],['الآباء الرسل','book'],['الرسل','book'],['التجلي','mountain'],['العذراء','crown'],['مريم','crown'],
+    ['ميخائيل','wing'],['الملاك','wing'],['الملائكة','wing'],['الأعياد السيدية','star'],['شم النسيم','egg']];
+  for(var j=0;j<K.length;j++)if(t.indexOf(K[j][0])>=0)return K[j][1];
+  return dy.type==='priests'?'people':ty.icon}
+var FASTS={nat:{id:'nat',name:'صوم الميلاد',short:'الميلاد'},lent:{id:'lent',name:'الصوم الكبير',short:'الكبير'},apo:{id:'apo',name:'صوم الرسل',short:'الرسل'},vir:{id:'vir',name:'صوم العذراء',short:'العذراء'},nin:{id:'nin',name:'صوم نينوى',short:'نينوى'},bar:{id:'bar',name:'برامون الغطاس',short:'البرامون'}};
+/* which fast (if any) a day belongs to: Nativity (16 Hatour -> day before Jan 7), Great Lent, Nineveh, Apostles (to 4 Abib), Virgin (1-15 Mesori) */
+function fastOf(dy){
+  var y=dy.y,c=dy.cop,dt=Date.UTC(y,dy.m-1,dy.d),off=Math.round((dt-easter(y).getTime())/86400000);
+  if(off>=-55&&off<=-1)return FASTS.lent;
+  if(off>=-69&&off<=-67)return FASTS.nin;
+  if(off>=50){var en=apostlesEnd(y);if(en&&dt<=en.getTime())return FASTS.apo}
+  if(c.m===12&&c.d<=15)return FASTS.vir;
+  if((c.m===3&&c.d>=16)||(c.m===4&&(dy.m===12||(dy.m===1&&dy.d<=6))))return FASTS.nat;
+  var bq=baramonOf(y,dy.m,dy.d);if(bq&&bq.k==='epi')return FASTS.bar;
+  return null}
+function fastStartsHere(dy){var f=fastOf(dy),t=Date.UTC(dy.y,dy.m-1,dy.d),i,pt,pd;
+  for(i=1;i<=80;i++){pt=new Date(t-i*86400000);var y=pt.getUTCFullYear(),m=pt.getUTCMonth()+1,d=pt.getUTCDate();
+    pd=fastOf({y:y,m:m,d:d,cop:coptic(y,m,d)});
+    if(!pd||pd.id!==f.id){var st=new Date(t-(i-1)*86400000);return st.getUTCMonth()+1===dy.m&&st.getUTCFullYear()===dy.y}}
+  return false}
 function rinfo(dy,D,i,mode){var A=mode==='one'?[0.9,0.94]:[0.86,0.9];
   var ty=TY[dy.type]||TY.normal,sp=dy.type!=='normal';
-  return {ty:ty,sp:sp,dark:sp&&isDark(ty.bg),bg:rgba(sp?ty.bg:(i%2?D.rowB:D.rowA),sp?A[1]:A[0]),fg:sp?ty.fg:D.text,sub:sp?ty.fg:D.sub,bar:sp?ty.ac:'transparent'}}
-function cellBox(inner,fs){return '<div style="padding:'+Math.round(fs*.32)+'px 5px;text-align:center">'+inner+'</div>'}
-function dayCell(dy,r,fs){
-  return cellBox('<div style="display:flex;align-items:center;justify-content:center;gap:4px;font-weight:700">'+(r.sp&&r.ty.icon?icon(r.ty.icon,Math.round(fs*.95),r.ty.ac):'')+'<span>'+DAYS[dy.wd]+'</span></div>'+
+  if(sp&&D.sp&&D.sp[dy.type])ty=Object.assign({},ty,D.sp[dy.type]);
+  return {ty:ty,ico:sp?feastIcon(dy,ty):'',sp:sp,dark:sp&&isDark(ty.bg),bg:rgba(sp?ty.bg:(i%2?D.rowB:D.rowA),sp?A[1]:A[0]),fg:sp?ty.fg:D.text,sub:sp?ty.fg:D.sub,bar:sp?ty.ac:'transparent'}}
+var PADK=1; /* vertical row padding factor: shrinks first, so the text keeps its size when there are many rows */
+function cellBox(inner,fs){return '<div style="padding:'+Math.max(1,Math.round(fs*.32*PADK))+'px 5px;text-align:center">'+inner+'</div>'}
+function fitSteps(kmax){var L=[],k,pd;for(k=kmax;k>=1;k-=0.03)L.push([k,1]);for(pd=0.9;pd>=0.34;pd-=0.07)L.push([1,pd]);for(k=0.97;k>=0.5;k-=0.03)L.push([k,0.34]);return L}
+function dayCell(dy,r,fs,D,fo){
+  var rb=0?'<span style="font-size:'+(fs*.6).toFixed(1)+'px;font-weight:700;line-height:1.25;padding:1px '+Math.round(fs*.45)+'px;border-radius:99px;white-space:nowrap;background:'+(r.dark?'rgba(255,255,255,.2)':rgba(D.headBg,.14))+';color:'+(r.dark?r.fg:D.headBg)+'">'+fo.short+'</span>':'';
+  return cellBox('<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:'+Math.round(fs*.14)+'px '+Math.round(fs*.3)+'px;font-weight:700">'+(r.sp&&r.ico?icon(r.ico,Math.round(fs*1.05),r.ty.ac):'')+'<span>'+DAYS[dy.wd]+'</span>'+rb+'</div>'+
     (dy.label?'<div style="font-size:'+(fs*.8).toFixed(1)+'px;color:'+r.sub+';line-height:1.25">'+esc(dy.label)+'</div>':''),fs)}
-function rowWrap(r,D,cols,fs,inner,key){
-  return '<div'+(key?' data-key="'+key+'"':'')+' style="display:grid;grid-template-columns:'+cols+';align-items:center;background:'+r.bg+';color:'+r.fg+';'+F+'font-size:'+fs.toFixed(1)+'px;line-height:1.3;border-right:3px solid '+r.bar+';'+
+function rowWrap(r,D,cols,fs,inner,key,ex){
+  return '<div'+(key?' data-key="'+key+'"':'')+' style="'+(ex||'')+'display:grid;grid-template-columns:'+cols+';align-items:center;background:'+r.bg+';color:'+r.fg+';'+F+'font-size:'+fs.toFixed(1)+'px;line-height:1.3;border-right:3px solid '+r.bar+';'+
     (D.gap?'border-radius:'+Math.round(fs*.7)+'px;':'border-top:1px solid '+D.line+';')+'">'+inner+'</div>'}
 var COLS={one:'1.6fr .75fr 1.05fr 1.6fr',two:'1.45fr .95fr 1.3fr'};
-function pageBlock(list,mode,k,D){
+function pageBlock(list,mode,k,D,fl,hasF){
   var fs=(mode==='one'?15:14.5)*k,cols=COLS[mode];
   var labels=mode==='one'?['اليوم','التاريخ','القبطي','الميعاد']:['اليوم','التاريخ','الميعاد'];
   var head=(S.design==='cards')?'':'<div style="display:grid;grid-template-columns:'+cols+';background:'+rgba(D.headBg,.90)+';color:'+D.headFg+';'+F+'font-weight:700;font-size:'+(fs*.95).toFixed(1)+'px;text-align:center;border-right:3px solid transparent">'+
     labels.map(function(l){return '<div style="padding:'+Math.round(fs*.4)+'px 4px">'+l+'</div>'}).join('')+'</div>';
   var rows=list.map(function(dy,i){
     var r=rinfo(dy,D,i,mode),dt='<bdi dir="ltr">'+n(dy.m)+'/'+n(dy.d)+'</bdi>',inner;
-    if(mode==='one')inner=dayCell(dy,r,fs)+cellBox(dt,fs)+cellBox(copText(dy.cop),fs)+cellBox(timeCell(dy,fs,r.sp,r.fg,D,r.dark),fs);
-    else inner=dayCell(dy,r,fs)+cellBox(dt+'<div style="font-size:'+(fs*.8).toFixed(1)+'px;color:'+r.sub+'">'+copText(dy.cop)+'</div>',fs)+cellBox(timeCell(dy,fs,r.sp,r.fg,D,r.dark),fs);
-    return rowWrap(r,D,cols,fs,inner,dy.key)}).join('');
+    if(mode==='one')inner=dayCell(dy,r,fs,D,fl&&fl[i])+cellBox(dt,fs)+cellBox(copText(dy.cop),fs)+cellBox(timeCell(dy,fs,r.sp,r.fg,D,r.dark),fs);
+    else inner=dayCell(dy,r,fs,D,fl&&fl[i])+cellBox(dt+'<div style="font-size:'+(fs*.8).toFixed(1)+'px;color:'+r.sub+'">'+copText(dy.cop)+'</div>',fs)+cellBox(timeCell(dy,fs,r.sp,r.fg,D,r.dark),fs);
+    var ban='';
+    if(hasF&&hasF[i]){
+      var tc=(function(h,f){h=h.replace('#','');return 'rgb('+[0,2,4].map(function(o){return Math.round(parseInt(h.substr(o,2),16)*f)}).join(',')+')'})(D.mon,.56),bgc=(function(h,f){h=h.replace('#','');return 'rgb('+[0,2,4].map(function(o){return Math.round(parseInt(h.substr(o,2),16)*f+255*(1-f))}).join(',')+')'})(D.mon,.24),lc=rgba(D.mon,.55);
+      var dtx='<bdi dir="ltr">'+n(dy.d)+'/'+n(dy.m)+'</bdi>',dot='<span style="width:'+(fs*.46).toFixed(1)+'px;height:'+(fs*.46).toFixed(1)+'px;border-radius:50%;background:'+tc+';flex:none"></span>';
+      ban='<div data-banner="1" style="display:flex;align-items:center;gap:'+Math.round(fs*.7)+'px;padding:'+Math.max(2,Math.round(fs*.3*PADK))+'px '+Math.round(fs*.85)+'px;background:'+bgc+';box-shadow:inset 0 0 0 1px '+rgba(D.mon,.45)+';color:'+tc+';'+F+'font-size:'+(fs*.9).toFixed(1)+'px;line-height:1.3;'+(D.gap?'border-radius:'+Math.round(fs*.75)+'px;':'border-top:1px solid '+D.line+';')+'">'+dot+'<span style="display:flex;align-items:baseline;gap:'+Math.round(fs*.4)+'px;white-space:nowrap"><span style="font-weight:500;font-size:.88em;opacity:.8">بداية</span><span style="font-weight:700">'+fl[i].name+'</span></span><span style="flex:1;height:1px;background:'+lc+'"></span><span style="white-space:nowrap;font-weight:700;font-size:.9em;padding:'+Math.round(fs*.1)+'px '+Math.round(fs*.7)+'px;border-radius:99px;background:'+tc+';color:'+bgc+'">'+DAYS[dy.wd]+' '+dtx+'</span></div>'}
+    return ban+rowWrap(r,D,cols,fs,inner,dy.key)}).join('');
   if(D.gap)return '<div style="display:flex;flex-direction:column;gap:'+Math.round(3*k)+'px">'+rows+'</div>';
   return '<div style="border:1px solid '+D.line+';border-radius:8px;overflow:hidden">'+head+rows+'</div>'}
 function pageHTML(fmt,mode,k,days,split){
-  var P=PG[fmt],H=P.H,D=DES[S.design]||DES.classic,top=Math.round(H*0.083),body;
+  var P=PG[fmt],H=P.H,D=DES[S.design]||DES.classic,top=Math.round(H*0.083),body,fl=days.map(fastOf),hasF=days.map(function(dy,i){return !!(fl[i]&&(i===0||!fl[i-1]||fl[i-1].id!==fl[i].id)&&fastStartsHere(dy))});
   if(!days.length)body='<div style="padding:30px;text-align:center;'+F+'color:'+D.sub+';background:'+rgba(D.paper,.9)+';border-radius:8px">لا توجد قداسات في هذا الشهر</div>';
-  else if(mode==='one')body=pageBlock(days,'one',k,D);
+  else if(mode==='one')body=pageBlock(days,'one',k,D,fl,hasF);
   else{var h=(split>=0&&split<=days.length)?split:Math.ceil(days.length/2);
-    body='<div style="display:flex;gap:12px;align-items:flex-start"><div style="flex:1;min-width:0">'+pageBlock(days.slice(0,h),'two',k,D)+'</div><div style="flex:1;min-width:0">'+pageBlock(days.slice(h),'two',k,D)+'</div></div>'}
+    body='<div style="display:flex;gap:12px;align-items:flex-start"><div style="flex:1;min-width:0">'+pageBlock(days.slice(0,h),'two',k,D,fl.slice(0,h),hasF.slice(0,h))+'</div><div style="flex:1;min-width:0">'+pageBlock(days.slice(h),'two',k,D,fl.slice(h),hasF.slice(h))+'</div></div>'}
   var LW=190,LH=104;
   var lg=function(w){return '<div style="width:'+LW+'px;height:'+LH+'px;flex:none;display:flex;align-items:center;justify-content:center"><img src="'+logoSrc(w)+'" style="max-width:100%;max-height:100%;display:block;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(80,50,10,.25))" alt=""></div>'};
   var mn=GMON[VM-1],tsz=mn.length>=6?38:(mn.length===5?40:42);
@@ -660,27 +735,31 @@ function fitPage(fmt){
   if(mode==='one'){
     var limits=[0.905,0.92];
     for(i=0;i<limits.length&&!res;i++){var avail=Math.floor(P.H*limits[i])-top;
-      for(k=kmax;k>=0.5;k-=0.03){host.innerHTML=pageHTML(fmt,'one',k,days);
-        if(host.querySelector('.pgc').offsetHeight<=avail){res={mode:'one',k:k,fs:base*k,ok:true,days:days};break}}}
-    if(!res)res={mode:'one',k:0.5,fs:base*0.5,ok:false,days:days};
+      var st=fitSteps(kmax);for(var q=0;q<st.length;q++){k=st[q][0];PADK=st[q][1];host.innerHTML=pageHTML(fmt,'one',k,days);
+        if(host.querySelector('.pgc').offsetHeight<=avail){res={mode:'one',k:k,fs:base*k,ok:true,days:days,pad:PADK};break}}}
+    if(!res){PADK=0.34;res={mode:'one',k:0.5,fs:base*0.5,ok:false,days:days,pad:PADK}}
     host.innerHTML='';return res}
   /* two columns: the right column (days 1..s) must stay above the chalice and the wheat (60% of the page height); the left column may go lower */
   var LR=0.60,LL=0.81,limR=P.H*LR,limL=P.H*LL,gap=(S.design==='cards'),kmax2=1;
   /* the size never grows beyond the normal size (a short month stays compact instead of stretching down to the chalice); it only shrinks when many rows need to fit */
-  for(k=kmax2;k>=0.5&&!res;k-=0.03){
+  var st2=fitSteps(kmax2);
+  for(var q2=0;q2<st2.length&&!res;q2++){
+    k=st2[q2][0];PADK=st2[q2][1];
     host.innerHTML=pageHTML(fmt,'two',k,days,n);
     var pgc=host.querySelector('.pgc'),blk=pgc.children[0]&&pgc.querySelector('div[style*="flex:1;min-width:0"] > div');
     if(!blk||!n)break;
-    var kids=Array.prototype.slice.call(blk.children),rows=gap?kids:kids.slice(1);
+    var rows=Array.prototype.slice.call(blk.querySelectorAll('[data-key]'));
     if(rows.length!==n)break;
     var pr=pgc.getBoundingClientRect(),br=blk.getBoundingClientRect(),yb=top+(br.top-pr.top),footH=Math.max(0,pr.bottom-br.bottom);
     var rt=[],rb=[];rows.forEach(function(r){var q=r.getBoundingClientRect();rt.push(q.top-br.top);rb.push(q.bottom-br.top)});
-    var headH=rt[0],sR=0,sL=n+1,s;
+    var ban0=blk.querySelector('[data-banner]'),bh=ban0?ban0.getBoundingClientRect().height:0,pv=rows[0].previousElementSibling;
+    var headH=rt[0]-((pv&&pv.hasAttribute('data-banner'))?bh:0),sR=0,sL=n+1,s;
     for(s=1;s<=n;s++){if(yb+rb[s-1]+1<=limR)sR=s}
-    for(s=n;s>=1;s--){var lh=(s>=n)?0:headH+(rb[n-1]-rt[s])+1;if(yb+lh+footH<=limL)sL=s;else break}
+    for(s=n;s>=1;s--){var lh=(s>=n)?0:headH+bh+(rb[n-1]-rt[s])+1;if(yb+lh+footH<=limL)sL=s;else break}
     var pref=Math.min(sR,Math.ceil(n/2));
-    if(pref>=1&&pref>=sL&&sL<=n)res={mode:'two',k:k,fs:base*k,ok:true,days:days,split:pref}}
-  if(!res)res={mode:'two',k:0.5,fs:base*0.5,ok:false,days:days,split:Math.ceil(n/2)};
+    if(pref>=1&&pref>=sL&&sL<=n)res={mode:'two',k:k,fs:base*k,ok:true,days:days,split:pref,pad:PADK}}
+  if(!res){PADK=0.34;res={mode:'two',k:0.5,fs:base*0.5,ok:false,days:days,split:Math.ceil(n/2),pad:PADK}}
+  PADK=res.pad;
   host.innerHTML='';return res}
 function pagePayload(fmt){var p=fitPage(fmt);return {html:pageHTML(fmt,p.mode,p.k,p.days,p.split),pick:p}}
 function fitTitles(root){Array.prototype.forEach.call(root.querySelectorAll('.ttl'),function(t){
@@ -752,6 +831,7 @@ function renderChips(){
     b.onclick=function(){S.design=k;persist();renderChips();renderSheet()};box.appendChild(b)})}
 
 function sugList(){
+  return []; /* movable feasts and their times are now applied automatically */
   var d=monthDays(VY,VM),sug=suggestions(VY),mo=mget(false),out=[];
   var nd=new Date(Date.UTC(VY,VM,0)).getUTCDate();
   for(var i=1;i<=nd;i++){var k=VY+'-'+pad(VM)+'-'+pad(i);if(sug[k]){var o=mo.days[k];
@@ -880,9 +960,9 @@ function renderSettings(){
   $('#digitsAr').setAttribute('aria-pressed',S.digits==='ar');
   var ft=$('#feastTime');ft.innerHTML='';var arr=[S.feastTime];timeEditor(ft,arr,function(){S.feastTime=arr[0]||T(7,'am');persist();renderSheet()});
   var fa=ft.querySelectorAll('button');fa.forEach(function(b){b.hidden=true});
-  [['#natTime','nativityTime',9],['#eastTime','easterTime',10]].forEach(function(z){
+  [['#natTime','nativityTime',9,'pm'],['#barTime','baramonTime',8,'am'],['#epiTime','epiphanyTime',5,'pm'],['#eastTime','easterTime',10,'pm']].forEach(function(z){
     var bx=$(z[0]);bx.innerHTML='';var ar=[S[z[1]]];
-    timeEditor(bx,ar,function(){S[z[1]]=ar[0]||T(z[2],'pm');persist();renderSheet()});
+    timeEditor(bx,ar,function(){S[z[1]]=ar[0]||T(z[2],z[3]);persist();renderSheet()});
     bx.querySelectorAll('button').forEach(function(b){b.hidden=true});
     bx.querySelectorAll('.tl').forEach(function(b){b.hidden=true})});
   $('#footer').value=S.footer||'';
@@ -1012,8 +1092,9 @@ function reviewNotes(){
     var c7=coptic(VY,1,7),d6=new Date(Date.UTC(VY,0,6)),w6=d6.getUTCDay();
     out.push('٧ يناير يوافق '+copText(c7)+(c7.m===4&&c7.d===28?': الميلاد منقول إلى ٢٨ كيهك هذه السنة بعد السنة القبطية الكبيسة.':': عيد الميلاد المجيد.'));
     out.push('قداس الميلاد مدرج مساء '+dayName(d6)+' (ليلة العيد). لا يُضاف قداس صباح العيد تلقائيًا، ولو في صلاة خاصة أضفها من تبويب الأيام.');
-    if(w6===6||w6===0){var fri=new Date(d6.getTime()-(w6===6?1:2)*86400000);
-      out.push('ليلة العيد تقع يوم '+DAYS[w6]+': راجع امتداد صوم البرامون ليبدأ من '+dayName(fri)+'.')}
+    var epS=baramonSets(VY)[1];if(epS)out.push('قداس الغطاس مدرج مساء '+dayName(new Date(epS.f-86400000))+' (ليلة العيد). لا يُضاف قداس صباح العيد تلقائيًا، ولو في صلاة خاصة أضفها من تبويب الأيام.');
+    baramonSets(VY).forEach(function(e){var wk=e.days.some(function(x){var g=x.getUTCDay();return g===0||g===6});
+      out.push(e.name+': '+e.days.map(dayName).join('، ')+' — صوم انقطاعي حتى المساء'+(wk?'، والسبت والأحد بدون انقطاع':'')+'، ويُمنع السمك في كل أيام البرامون'+(wk?' بما فيها السبت والأحد.':'.'))});
   }
   var eve=new Date(e.getTime()-86400000);
   if(eve.getUTCFullYear()===VY&&eve.getUTCMonth()+1===VM)out.push('قداس القيامة مدرج مساء سبت النور ('+dayName(eve)+'). لا يُضاف قداس صباح العيد تلقائيًا.');

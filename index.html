@@ -244,6 +244,7 @@ body.sheet-open{padding-bottom:62vh}
     <div class="chips" id="designChips"></div>
     <div class="seg" style="grid-template-columns:repeat(2,1fr)" id="fmtSeg"><button type="button" data-f="img" aria-pressed="true">معاينة الصورة ٥×٧</button><button type="button" data-f="a4" aria-pressed="false">معاينة صفحة A4</button></div>
     <p class="hint">اضغط على أي يوم في الجدول لتعديله، واسحب الجدول يمينًا أو يسارًا لتغيير الشهر، أو اسحب خارج الجدول للتنقل بين الأقسام.</p>
+    <p class="hint" style="color:var(--warn)">◀ السهم الأحمر = يوم غير ثابت (عيد أو تذكار أو تعديل أو فترة…). للمراجعة هنا فقط، ولا يظهر في الصورة ولا الـPDF ولا الـWord.</p>
     <div class="stage"><div class="stagebox" id="stagebox"><div id="sheetHost"></div></div></div>
     <div class="exgrid">
       <div class="export-action"><button class="btn primary" id="exWa" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zM8 8h8M8 12h8M8 16h5"/></svg> تحميل صورة ٥×٧</button><button class="btn share-btn" id="shareWa" type="button" aria-label="مشاركة صورة الجدول" title="مشاركة الصورة"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.7 10.7 6.6-4.4M8.7 13.3l6.6 4.4"/></svg></button></div>
@@ -620,7 +621,8 @@ function monthDays(y,m){
       if(typeof o.label==='string')label=o.label;if(o.type)type=o.type;
       if(o.alt!==undefined)alt=!!o.alt;
       if(o.noMass){noMass=true;times=[]}else if(o.times){noMass=false;times=o.times}}}
-    if(listed)out.push({key:key,y:y,m:m,d:d,wd:wd,cop:c,label:label,type:type,times:times,noMass:noMass,alt:alt,per:perName,ov:!!o,sug:sug[key]})
+    var fixed=!o&&!pr&&!auto&&!label&&type==='normal'&&!noMass&&JSON.stringify(times)===JSON.stringify(S.defaults[wd]||[])&&alt===((S.alt&&S.alt[wd]!==undefined)?!!S.alt[wd]:true);
+    if(listed)out.push({key:key,y:y,m:m,d:d,wd:wd,cop:c,label:label,type:type,times:times,noMass:noMass,alt:alt,per:perName,ov:!!o,sug:sug[key],fixed:fixed})
   }
   return out}
 
@@ -781,9 +783,27 @@ function keepScroll(fn){
       if(Math.abs((window.pageYOffset||0)-y)>0.5){
         /* page really got shorter than the old position (e.g. the day sheet closed): keep the room instead of jumping */
         SCROLL_LOCK=true;bs.minHeight=(y+window.innerHeight)+'px';scrollNow(y)}})}}
+/* review aid (preview only): red arrow beside every day that is NOT a plain fixed weekly slot.
+   Drawn as an overlay on #sheetHost after render, so it never reaches the image, PDF or Word exports. */
+function markReview(){
+  var host=$('#sheetHost');if(!host)return;
+  var root=host.querySelector('.pgroot');if(!root)return;
+  Array.prototype.forEach.call(root.querySelectorAll('[data-review]'),function(a){a.parentNode.removeChild(a)});
+  if(!PICK||!PICK.days)return;
+  var fx={};PICK.days.forEach(function(d){fx[d.key]=d.fixed});
+  var hr=root.getBoundingClientRect(),sc=hr.width/PW,pc=root.querySelector('.pgc');if(!sc||!pc)return;
+  var pr=pc.getBoundingClientRect(),mid=pr.left+pr.width/2,AW=30,AH=26;
+  Array.prototype.forEach.call(host.querySelectorAll('[data-key]'),function(r){
+    if(fx[r.dataset.key])return;
+    var q=r.getBoundingClientRect(),leftSide=(q.width<pr.width*0.8)&&(q.left+q.width/2<mid);
+    var x=leftSide?(q.left-hr.left)/sc-6-AW:(q.right-hr.left)/sc+6,y=(q.top-hr.top)/sc+q.height/sc/2-AH/2;
+    var a=document.createElement('div');a.setAttribute('data-review','1');a.setAttribute('aria-hidden','true');
+    a.style.cssText='position:absolute;z-index:5;pointer-events:none;width:'+AW+'px;height:'+AH+'px;left:'+x.toFixed(1)+'px;top:'+y.toFixed(1)+'px'+(leftSide?';transform:scaleX(-1)':'');
+    a.innerHTML='<svg width="'+AW+'" height="'+AH+'" viewBox="0 0 30 26" style="display:block;overflow:visible"><polygon points="2,13 14,2 14,9 29,9 29,17 14,17 14,24" fill="#E5101D" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>';
+    root.appendChild(a)})}
 function renderSheet(){keepScroll(function(){
-  var host=$('#sheetHost'),pl=pagePayload(PFMT);PICK=pl.pick;host.innerHTML=pl.html;fitTitles(host);fit();markSheetRow()})}
-if(document.fonts&&document.fonts.addEventListener)document.fonts.addEventListener('loadingdone',function(){var h=$('#sheetHost');if(h)fitTitles(h)});
+  var host=$('#sheetHost'),pl=pagePayload(PFMT);PICK=pl.pick;host.innerHTML=pl.html;fitTitles(host);fit();markSheetRow();markReview()})}
+if(document.fonts&&document.fonts.addEventListener)document.fonts.addEventListener('loadingdone',function(){var h=$('#sheetHost');if(h){fitTitles(h);markReview()}});
 function fit(){
   var box=$('#stagebox'),host=$('#sheetHost');if(!box||!host)return;
   var w=box.clientWidth||PW,k=Math.min(1,w/PW);

@@ -563,8 +563,6 @@ function esc(x){return String(x).replace(/[&<>"]/g,function(c){return {'&':'&amp
 function periodRule(key,wd){var r=null;(S.periods||[]).forEach(function(p){
   var q=p.wd&&p.wd[wd];
   if(key>=p.from&&key<=p.to&&q&&q.mode&&q.mode!=='asis'){r={mode:q.mode,times:q.times||[],alt:q.alt!==false,name:p.name||''}}});return r}
-/* Great Lent weekday masses (from the church's real schedule): Wednesday 1 pm, Thursday 12 noon */
-var LENT_DEF={3:[T(1,'noon')],4:[T(12,'noon')]};
 /* البرامون: استعداد بالصوم لعيدين فقط (الميلاد والغطاس): العيد الأحد = الجمعة والسبت، العيد الاثنين = الجمعة والسبت والأحد، غير ذلك = اليوم السابق فقط. لا يخص الختان ولا قانا */
 function baramonSets(y){var DAY=86400000,ev=[{k:'nat',name:'برامون الميلاد',f:Date.UTC(y,0,7)}],i,c;
   for(i=17;i<=22;i++){c=coptic(y,1,i);if(c.m===5&&c.d===11){ev.push({k:'epi',name:'برامون الغطاس',f:Date.UTC(y,0,i)});break}}
@@ -589,7 +587,6 @@ function monthDays(y,m){
       if(pr.mode==='none'){times=[];listed=false;alt=false}
       else{times=cl(pr.times);listed=times.length>0;alt=pr.alt}}
     var off=Math.round((Date.UTC(y,m-1,d)-eT)/86400000);
-    if(!pr&&off>=-55&&off<=-10&&LENT_DEF[wd]){times=cl(LENT_DEF[wd]);listed=true}
     var f=null,i;for(i=0;i<S.feasts.length;i++){if(S.feasts[i].m===c.m&&S.feasts[i].d===c.d){f=S.feasts[i];break}}
     if(f){label=f.name;type=f.type||'feast';if(!listed){times=[cl(S.feastTime)];listed=true;alt=false}}
     MEM.forEach(function(x){
@@ -703,7 +700,7 @@ function pageBlock(list,mode,k,D,fl,hasF){
     var ban='';
     if(hasF&&hasF[i]){
       var tc=(function(h,f){h=h.replace('#','');return 'rgb('+[0,2,4].map(function(o){return Math.round(parseInt(h.substr(o,2),16)*f)}).join(',')+')'})(D.mon,.56),bgc=(function(h,f){h=h.replace('#','');return 'rgb('+[0,2,4].map(function(o){return Math.round(parseInt(h.substr(o,2),16)*f+255*(1-f))}).join(',')+')'})(D.mon,.24),lc=rgba(D.mon,.55);
-      var dtx='<bdi dir="ltr">'+n(dy.d)+'/'+n(dy.m)+'</bdi>',dot='<span style="width:'+(fs*.46).toFixed(1)+'px;height:'+(fs*.46).toFixed(1)+'px;border-radius:50%;background:'+tc+';flex:none"></span>';
+      var dtx='<bdi dir="ltr">'+n(dy.m)+'/'+n(dy.d)+'</bdi>',dot='<span style="width:'+(fs*.46).toFixed(1)+'px;height:'+(fs*.46).toFixed(1)+'px;border-radius:50%;background:'+tc+';flex:none"></span>';
       ban='<div data-banner="1" style="display:flex;align-items:center;gap:'+Math.round(fs*.7)+'px;padding:'+Math.max(2,Math.round(fs*.3*PADK))+'px '+Math.round(fs*.85)+'px;background:'+bgc+';box-shadow:inset 0 0 0 1px '+rgba(D.mon,.45)+';color:'+tc+';'+F+'font-size:'+(fs*.9).toFixed(1)+'px;line-height:1.3;'+(D.gap?'border-radius:'+Math.round(fs*.75)+'px;':'border-top:1px solid '+D.line+';')+'">'+dot+'<span style="display:flex;align-items:baseline;gap:'+Math.round(fs*.4)+'px;white-space:nowrap"><span style="font-weight:500;font-size:.88em;opacity:.8">بداية</span><span style="font-weight:700">'+fl[i].name+'</span></span><span style="flex:1;height:1px;background:'+lc+'"></span><span style="white-space:nowrap;font-weight:700;font-size:.9em;padding:'+Math.round(fs*.1)+'px '+Math.round(fs*.7)+'px;border-radius:99px;background:'+tc+';color:'+bgc+'">'+DAYS[dy.wd]+' '+dtx+'</span></div>'}
     return ban+rowWrap(r,D,cols,fs,inner,dy.key)}).join('');
   if(D.gap)return '<div style="display:flex;flex-direction:column;gap:'+Math.round(3*k)+'px">'+rows+'</div>';
@@ -1283,7 +1280,7 @@ function deliver(blob,name,kind){showResult(blob,name,kind);dlBlob(blob,name);to
 /* image 5x7 (portrait) */
 async function makeImageFile(){var cv=await renderPageCanvas('img'),blob=await canvasBlob(cv,'image/jpeg',0.95);if(!blob)throw new Error('empty');return {blob:blob,name:fname('jpg','5x7'),kind:'image'}}
 async function makePdfFile(){var cv=await renderPageCanvas('a4'),blob=await canvasToPdf(cv);return {blob:blob,name:fname('pdf','A4'),kind:'file'}}
-async function makeWordFile(){return {blob:docxBlob(),name:fname('docx','A4'),kind:'file'}}
+async function makeWordFile(){var lg={diocese:await logoPng('diocese'),church:await logoPng('church')};return {blob:docxBlob(lg),name:fname('docx','A4'),kind:'file'}}
 async function shareFile(file){
   var f=new File([file.blob],file.name,{type:file.blob.type||'application/octet-stream'});
   if(navigator.share&&navigator.canShare&&navigator.canShare({files:[f]})){
@@ -1343,35 +1340,105 @@ function zipStore(files){
   e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cs,true);e.setUint32(16,off,true);
   return new Blob(loc.concat(cen,[new Uint8Array(e.buffer)]),{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'})}
 function hx(c){return String(c).replace('#','')}
-function wpara(text,o){
-  o=o||{};var sz=o.sz||24;
-  return '<w:p><w:pPr><w:bidi/><w:spacing w:before="'+(o.sp===undefined?40:o.sp)+'" w:after="'+(o.sp===undefined?40:o.sp)+'"/><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/>'+(o.b?'<w:b/><w:bCs/>':'')+(o.color?'<w:color w:val="'+hx(o.color)+'"/>':'')+'<w:sz w:val="'+sz+'"/><w:szCs w:val="'+sz+'"/><w:rtl/></w:rPr><w:t xml:space="preserve">'+esc(text)+'</w:t></w:r></w:p>'}
-function wrun(text,o){var sz=o.sz||24;return '<w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/>'+(o.b?'<w:b/><w:bCs/>':'')+(o.color?'<w:color w:val="'+hx(o.color)+'"/>':'')+'<w:sz w:val="'+sz+'"/><w:szCs w:val="'+sz+'"/><w:rtl/></w:rPr><w:t xml:space="preserve">'+esc(text)+'</w:t></w:r>'}
-function wtitle(a,b,c1,c2,sz,sp){return '<w:p><w:pPr><w:bidi/><w:spacing w:before="'+sp+'" w:after="'+sp+'"/><w:jc w:val="center"/></w:pPr>'+wrun(a,{b:1,color:c1,sz:sz})+wrun(b,{b:1,color:c2,sz:sz})+'</w:p>'}
-function wcell(w,fill,paras){
-  return '<w:tc><w:tcPr><w:tcW w:w="'+w+'" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="'+hx(fill)+'"/><w:vAlign w:val="center"/></w:tcPr>'+paras+'</w:tc>'}
-
+function wp(text,o){
+  o=o||{};var fo=o.font||'Arial',sz=o.sz||24;
+  var ln='<w:spacing w:before="0" w:after="0"'+(o.line?' w:line="'+o.line+'" w:lineRule="exact"':'')+'/>';
+  var bdr=o.bb?'<w:pBdr><w:bottom w:val="single" w:sz="'+o.bb[1]+'" w:space="0" w:color="'+hx(o.bb[0])+'"/></w:pBdr>':'';
+  var run=(text===''||text===undefined)?'':'<w:r><w:rPr><w:rFonts w:ascii="'+fo+'" w:hAnsi="'+fo+'" w:cs="'+fo+'"/>'+(o.b?'<w:b/><w:bCs/>':'')+(o.color?'<w:color w:val="'+hx(o.color)+'"/>':'')+(o.spc?'<w:spacing w:val="'+o.spc+'"/>':'')+'<w:sz w:val="'+sz+'"/><w:szCs w:val="'+sz+'"/><w:rtl/></w:rPr><w:t xml:space="preserve">'+esc(text)+'</w:t></w:r>';
+  return '<w:p><w:pPr>'+bdr+'<w:bidi/>'+ln+'<w:jc w:val="center"/><w:rPr><w:sz w:val="'+sz+'"/></w:rPr></w:pPr>'+run+'</w:p>'}
+function wimg(rid,id,name,cx,cy){
+  return '<w:p><w:pPr><w:bidi/><w:spacing w:before="0" w:after="0"/><w:jc w:val="center"/></w:pPr><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="'+cx+'" cy="'+cy+'"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:docPr id="'+id+'" name="'+name+'"/><wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="'+id+'" name="'+name+'"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="'+rid+'"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="'+cx+'" cy="'+cy+'"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>'}
+function wc(w,paras,o){o=o||{};var m=o.m||[0,0,0,0];
+  return '<w:tc><w:tcPr><w:tcW w:w="'+w+'" w:type="dxa"/>'+(o.span?'<w:gridSpan w:val="'+o.span+'"/>':'')+(o.fill?'<w:shd w:val="clear" w:color="auto" w:fill="'+hx(o.fill)+'"/>':'')+'<w:tcMar><w:top w:w="'+m[0]+'" w:type="dxa"/><w:left w:w="'+m[1]+'" w:type="dxa"/><w:bottom w:w="'+m[2]+'" w:type="dxa"/><w:right w:w="'+m[3]+'" w:type="dxa"/></w:tcMar><w:vAlign w:val="'+(o.va||'center')+'"/></w:tcPr>'+paras+'</w:tc>'}
+function wr(cells,o){o=o||{};return '<w:tr><w:trPr>'+(o.free?'':'<w:cantSplit/>')+(o.hdr?'<w:tblHeader/>':'')+'</w:trPr>'+cells+'</w:tr>'}
+function wt(widths,rows,bd){
+  var tot=widths.reduce(function(a,b){return a+b},0),ks=['top','left','bottom','right','insideH','insideV'];
+  var b=ks.map(function(k){return bd?'<w:'+k+' w:val="single" w:sz="4" w:space="0" w:color="'+hx(bd)+'"/>':'<w:'+k+' w:val="nil"/>'}).join('');
+  return '<w:tbl><w:tblPr><w:bidiVisual/><w:tblW w:w="'+tot+'" w:type="dxa"/><w:jc w:val="center"/><w:tblBorders>'+b+'</w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="0" w:type="dxa"/><w:left w:w="0" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>'+widths.map(function(x){return '<w:gridCol w:w="'+x+'"/>'}).join('')+'</w:tblGrid>'+rows+'</w:tbl>'}
 function b64u8(b){var s=atob(b),u=new Uint8Array(s.length);for(var i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u}
-function docxBlob(){
-  var D=DES[S.design]||DES.classic,days=monthDays(VY,VM),W=[3000,1600,2300,3356],bd=hx(D.line);
-  /* font size so the whole month fits in the clear area of the background (one page) */
-  var lines=1.2;days.forEach(function(dy){lines+=1+(dy.label?0.8:0)+(dy.noMass?0:Math.max(0,(dy.alt?0:dy.times.length-1)))});
-  var availTw=12458-900-(days.length+1)*90,pt=Math.max(7,Math.min(15,availTw/lines/20/1.25)),sz=Math.round(pt*2),szl=Math.max(12,Math.round(sz*0.8));
-  var sides=['top','left','bottom','right','insideH','insideV'].map(function(k){return '<w:'+k+' w:val="single" w:sz="4" w:space="0" w:color="'+bd+'"/>'}).join('');
-  var rows='<w:tr><w:trPr><w:cantSplit/><w:tblHeader/></w:trPr>'+['اليوم','التاريخ','القبطي','الميعاد'].map(function(h,i){return wcell(W[i],D.headBg,wpara(h,{b:1,color:D.headFg,sz:sz+2,sp:0}))}).join('')+'</w:tr>';
-  days.forEach(function(dy,i){
-    var ty=TY[dy.type]||TY.normal,special=dy.type!=='normal',fill=special?ty.bg:(i%2?D.rowB:D.rowA),fg=special?ty.fg:D.text;
-    var dayP=wpara(DAYS[dy.wd],{b:1,color:fg,sz:sz,sp:0})+(dy.label?wpara(dy.label,{color:fg,sz:szl,sp:0}):'');
-    var timeP='';
-    if(dy.noMass)timeP=wpara('لا يوجد قداس',{b:1,color:fg,sz:sz,sp:0});
-    else if(dy.alt)timeP=wpara(dy.times.map(fmtTime).join(' و '),{color:fg,b:1,sz:sz,sp:0});
-    else dy.times.forEach(function(t){timeP+=wpara(fmtTime(t),{color:fg,b:1,sz:sz,sp:0})});
-    rows+='<w:tr><w:trPr><w:cantSplit/></w:trPr>'+wcell(W[0],fill,dayP)+wcell(W[1],fill,wpara(n(dy.m)+'/'+n(dy.d),{color:fg,sz:sz,sp:0}))+wcell(W[2],fill,wpara(copText(dy.cop),{color:fg,sz:sz,sp:0}))+wcell(W[3],fill,timeP)+'</w:tr>'});
-  var body=wtitle('مواعيد قداسات شهر ',GMON[VM-1],D.title,D.mon,56,20)+
-    wpara(n(VY),{b:1,color:D.sub,sz:28,sp:80})+
-    '<w:tbl><w:tblPr><w:bidiVisual/><w:tblW w:w="'+W.reduce(function(a,b){return a+b},0)+'" w:type="dxa"/><w:jc w:val="center"/><w:tblBorders>'+sides+'</w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="35" w:type="dxa"/><w:left w:w="60" w:type="dxa"/><w:bottom w:w="35" w:type="dxa"/><w:right w:w="60" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>'+W.map(function(x){return '<w:gridCol w:w="'+x+'"/>'}).join('')+'</w:tblGrid>'+rows+'</w:tbl>'+
-    (S.footer?wpara(S.footer,{color:D.sub,sz:20,sp:80}):wpara('',{sz:4,sp:0}))+
-    '<w:sectPr><w:headerReference w:type="default" r:id="rId2"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="2480" w:right="825" w:bottom="1900" w:left="825" w:header="0" w:footer="0" w:gutter="0"/><w:bidi/></w:sectPr>';
+var TPX=11906/750,PTPX=595.28/750;
+function tw(px){return Math.round(px*TPX)}
+function hs(px){return Math.max(2,Math.round(px*PTPX*2))}
+function logoPng(which){return new Promise(function(res){
+  try{var im=new Image();
+    im.onload=function(){try{var w=im.naturalWidth,h=im.naturalHeight;if(!w||!h){res(null);return}
+      var sc=Math.min(1,900/Math.max(w,h)),cw=Math.max(1,Math.round(w*sc)),ch=Math.max(1,Math.round(h*sc)),c=document.createElement('canvas');
+      c.width=cw;c.height=ch;c.getContext('2d').drawImage(im,0,0,cw,ch);
+      res({u8:b64u8(c.toDataURL('image/png').split(',')[1]),w:cw,h:ch})}catch(e){res(null)}};
+    im.onerror=function(){res(null)};im.src=logoSrc(which)}catch(e){res(null)}})}
+function docxBlob(LG){
+  LG=LG||{};
+  var D=DES[S.design]||DES.classic,days=monthDays(VY,VM),nd=days.length,md=(S.layout==='two')?'two':'one';
+  var W1=[3343,1567,2194,3342],W2=[2010,1317,1801],GAP=190,HW=[3016,3970,3016];
+  var P1=W1.map(function(x){return x/TPX}),P2=W2.map(function(x){return x/TPX});
+  /* heading block: same structure as the image (diocese logo | title | church logo) */
+  var mn=GMON[VM-1],mpx=Math.max(28,Math.min(64,Math.floor(245/(mn.length*.5))));
+  var titleH=Math.max(104,22*1.3+mpx*1.3+19*1.3),y0=84+titleH+8;
+  /* row height model (px) used to fit the month on one page, like the image does */
+  function txtLines(t,fsPx,wPx){var per=Math.max(1,Math.floor((wPx-10)/(fsPx*.52)));return Math.max(1,Math.ceil(String(t).length/per))}
+  function rowPx(dy,fs,pk,m){
+    var pad=Math.max(1,Math.round(fs*.32*pk)),P=m==='one'?P1:P2;
+    var dayH=fs*1.3+(dy.label?txtLines(dy.label,fs*.8,P[0])*fs:0);
+    var timeW=m==='one'?P[3]:P[2],timeH;
+    if(dy.noMass)timeH=fs*1.3;
+    else if(dy.alt)timeH=txtLines(dy.times.map(fmtTime).join(' و '),fs,timeW)*fs*1.3;
+    else timeH=Math.max(1,dy.times.length)*fs*1.3;
+    var dateH=m==='one'?fs*1.3:fs*1.3+fs*1.04;
+    return 2*pad+Math.max(dayH,dateH,timeH)+1}
+  function headPx(fs){return Math.round(fs*.4)*2+fs*.95*1.3+1}
+  var H=1061,SAFE=1.04,base=md==='one'?15:14.5,steps=fitSteps(md==='one'?1.3:1),pick=null,si,k,pk,fs,hp,hts,cum,s,i;
+  for(si=0;si<steps.length&&nd;si++){
+    k=steps[si][0];pk=steps[si][1];fs=base*k;hp=headPx(fs);
+    hts=days.map(function(dy){return rowPx(dy,fs,pk,md)*SAFE});
+    cum=[0];hts.forEach(function(h){cum.push(cum[cum.length-1]+h)});
+    if(md==='one'){if(y0+hp+cum[nd]<=H*0.905){pick={k:k,pk:pk,fs:fs};break}}
+    else{
+      var sR=0,sL=nd+1;
+      for(s=1;s<=nd;s++){if(y0+hp+cum[s]<=H*0.60)sR=s}
+      for(s=nd;s>=1;s--){var lh=(s>=nd)?0:hp+(cum[nd]-cum[s]);if(y0+lh<=H*0.81)sL=s;else break}
+      var pref=Math.min(sR,Math.ceil(nd/2));
+      if(pref>=1&&pref>=sL&&sL<=nd){pick={k:k,pk:pk,fs:fs,split:pref};break}}}
+  if(!pick){var lk=steps[steps.length-1];pick={k:lk[0],pk:lk[1],fs:base*lk[0],split:Math.ceil(nd/2)}}
+  fs=pick.fs;pk=pick.pk;
+  /* day rows */
+  function rowsOf(list,m,widths){
+    var pad=Math.max(1,Math.round(fs*.32*pk)),mm=[tw(pad),79,tw(pad),79],labs=m==='one'?['اليوم','التاريخ','القبطي','الميعاد']:['اليوم','التاريخ','الميعاد'];
+    var out=wr(labs.map(function(h,j){return wc(widths[j],wp(h,{b:1,color:D.headFg,sz:hs(fs*.95),line:tw(fs*.95*1.3)}),{fill:D.headBg,m:[tw(Math.round(fs*.4)),tw(4),tw(Math.round(fs*.4)),tw(4)]})}).join(''),{hdr:1});
+    list.forEach(function(dy,j){
+      var ty=TY[dy.type]||TY.normal,special=dy.type!=='normal';
+      if(special&&D.sp&&D.sp[dy.type])ty=Object.assign({},ty,D.sp[dy.type]);
+      var fill=special?ty.bg:(j%2?D.rowB:D.rowA),fg=special?ty.fg:D.text,sub=special?ty.fg:D.sub;
+      var ln=tw(fs*1.3),sz=hs(fs),szl=hs(fs*.8);
+      var dayP=wp(DAYS[dy.wd],{b:1,color:fg,sz:sz,line:ln})+(dy.label?wp(dy.label,{color:sub,sz:szl,line:tw(fs)}):'');
+      var dt=n(dy.m)+'/'+n(dy.d),timeP='';
+      if(dy.noMass)timeP=wp('لا يوجد قداس',{b:1,color:fg,sz:sz,line:ln});
+      else if(dy.alt)timeP=wp(dy.times.map(fmtTime).join(' و '),{b:1,color:fg,sz:sz,line:ln});
+      else dy.times.forEach(function(t){timeP+=wp(fmtTime(t),{b:1,color:fg,sz:sz,line:ln})});
+      var cells;
+      if(m==='one')cells=wc(widths[0],dayP,{fill:fill,m:mm})+wc(widths[1],wp(dt,{color:fg,sz:sz,line:ln}),{fill:fill,m:mm})+wc(widths[2],wp(copText(dy.cop),{color:fg,sz:sz,line:ln}),{fill:fill,m:mm})+wc(widths[3],timeP,{fill:fill,m:mm});
+      else cells=wc(widths[0],dayP,{fill:fill,m:mm})+wc(widths[1],wp(dt,{color:fg,sz:sz,line:ln})+wp(copText(dy.cop),{color:sub,sz:szl,line:ln}),{fill:fill,m:mm})+wc(widths[2],timeP,{fill:fill,m:mm});
+      out+=wr(cells)});
+    return out}
+  var tiny=wp('',{sz:2,line:20}),tableXml;
+  if(!nd)tableXml=wp('لا توجد قداسات في هذا الشهر',{color:D.sub,sz:hs(15),line:tw(20)});
+  else if(md==='one')tableXml=wt(W1,rowsOf(days,'one',W1),D.line);
+  else{var sp=pick.split;
+    tableXml=wt([W2[0]+W2[1]+W2[2],GAP,W2[0]+W2[1]+W2[2]],wr(
+      wc(5128,wt(W2,rowsOf(days.slice(0,sp),'two',W2),D.line)+tiny,{va:'top'})+wc(GAP,tiny,{va:'top'})+
+      (sp<nd?wc(5128,wt(W2,rowsOf(days.slice(sp),'two',W2),D.line)+tiny,{va:'top'}):wc(5128,tiny,{va:'top'})),{free:1}))}
+  /* heading */
+  var logoCell=function(which,rid,id,w){
+    var L=LG[which];if(!L)return wc(w,tiny);
+    var bw=186,bh=100,r=L.w/L.h,wpx=r>bw/bh?bw:bh*r,hpx=r>bw/bh?bw/r:bh;
+    return wc(w,wimg(rid,id,'logo '+which,Math.round(wpx*10080),Math.round(hpx*10080)))};
+  var rule=wc(1000,wp('',{sz:2,line:20,bb:[D.mon,12]}));
+  var yearRow=wt([1000,1097,1000],wr(rule+wc(1097,wp(n(VY),{b:1,color:D.title,sz:hs(19),spc:32,line:tw(19*1.3)}))+rule));
+  var titleCell=wc(HW[1],wp('مواعيد قداسات شهر',{font:'Amiri',b:1,color:D.title,sz:hs(22),line:tw(22*1.3)})+wp(mn,{font:'Amiri',b:1,color:D.mon,sz:hs(mpx),line:tw(mpx*1.3)})+yearRow+tiny);
+  var head=wt(HW,wr(logoCell('diocese','rId3',2,HW[0])+titleCell+logoCell('church','rId4',3,HW[2])));
+  var spacer='<w:p><w:pPr><w:bidi/><w:spacing w:before="0" w:after="0" w:line="127" w:lineRule="exact"/><w:rPr><w:sz w:val="2"/></w:rPr></w:pPr></w:p>';
+  var body=head+spacer+tableXml+
+    (S.footer?wp(S.footer,{color:D.sub,sz:hs(11.5),line:tw(11.5*1.5)}):tiny)+
+    '<w:sectPr><w:headerReference w:type="default" r:id="rId2"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="'+tw(88)+'" w:right="'+tw(46)+'" w:bottom="800" w:left="'+tw(46)+'" w:header="0" w:footer="0" w:gutter="0"/><w:bidi/></w:sectPr>';
   var NS='xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"';
   var X='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
   var doc=X+'<w:document '+NS+'><w:body>'+body+'</w:body></w:document>';
@@ -1379,13 +1446,15 @@ function docxBlob(){
   var hdr=X+'<w:hdr '+NS+'><w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/></w:pPr><w:r><w:drawing><wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="0" behindDoc="1" locked="0" layoutInCell="1" allowOverlap="1"><wp:simplePos x="0" y="0"/><wp:positionH relativeFrom="page"><wp:posOffset>0</wp:posOffset></wp:positionH><wp:positionV relativeFrom="page"><wp:posOffset>0</wp:posOffset></wp:positionV><wp:extent cx="'+CX+'" cy="'+CY2+'"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:wrapNone/><wp:docPr id="1" name="background"/><wp:cNvGraphicFramePr/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="0" name="background.jpg"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rId1"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="'+CX+'" cy="'+CY2+'"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:anchor></w:drawing></w:r></w:p></w:hdr>';
   var enc=new TextEncoder();
   return zipStore([
-    {name:'[Content_Types].xml',data:enc.encode(X+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpg" ContentType="image/jpeg"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/></Types>')},
+    {name:'[Content_Types].xml',data:enc.encode(X+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpg" ContentType="image/jpeg"/><Default Extension="png" ContentType="image/png"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/><Override PartName="/word/fontTable.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.fontTable+xml"/></Types>')},
     {name:'_rels/.rels',data:enc.encode(X+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>')},
     {name:'word/document.xml',data:enc.encode(doc)},
-    {name:'word/_rels/document.xml.rels',data:enc.encode(X+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/></Relationships>')},
+    {name:'word/_rels/document.xml.rels',data:enc.encode(X+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/logo_diocese.png"/><Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/logo_church.png"/><Relationship Id="rId5" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/fontTable" Target="fontTable.xml"/></Relationships>')},
     {name:'word/header1.xml',data:enc.encode(hdr)},
     {name:'word/_rels/header1.xml.rels',data:enc.encode(X+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/background.jpg"/></Relationships>')},
-    {name:'word/media/background.jpg',data:b64u8(BG_B64)}])}
+    {name:'word/media/background.jpg',data:b64u8(BG_B64)},
+    {name:'word/fontTable.xml',data:enc.encode(X+'<w:fonts xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:font w:name="Amiri"><w:altName w:val="Traditional Arabic"/><w:charset w:val="B2"/><w:family w:val="roman"/><w:pitch w:val="variable"/></w:font><w:font w:name="Arial"><w:charset w:val="00"/><w:family w:val="swiss"/><w:pitch w:val="variable"/></w:font></w:fonts>')}]
+    .concat(LG.diocese?[{name:'word/media/logo_diocese.png',data:LG.diocese.u8}]:[],LG.church?[{name:'word/media/logo_church.png',data:LG.church.u8}]:[]))}
 bindExport('exDoc','shareDoc','جاري تجهيز ملف Word…',makeWordFile);
 
 document.querySelectorAll('#fmtSeg button').forEach(function(b){b.onclick=function(){PFMT=b.dataset.f;document.querySelectorAll('#fmtSeg button').forEach(function(x){x.setAttribute('aria-pressed',x===b)});renderSheet()}});
